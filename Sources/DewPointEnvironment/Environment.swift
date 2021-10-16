@@ -1,24 +1,20 @@
+import Client
 import EnvVars
 import MQTTNIO
-import RelayClient
-import TemperatureSensorClient
 
 public struct DewPointEnvironment {
   
-  public var mqttClient: MQTTClient
+  public var client: Client
   public var envVars: EnvVars
-  public var relayClient: RelayClient
-  public var temperatureSensorClient: TemperatureSensorClient
+  public var mqttClient: MQTTClient
   
   public init(
-    mqttClient: MQTTClient,
+    client: Client,
     envVars: EnvVars,
-    relayClient: RelayClient,
-    temperatureSensorClient: TemperatureSensorClient
+    mqttClient: MQTTClient
   ) {
     self.mqttClient = mqttClient
     self.envVars = envVars
-    self.relayClient = relayClient
-    self.temperatureSensorClient = temperatureSensorClient
+    self.client = client
   }
 }

@@ -13,8 +13,8 @@ let package = Package(
     .library(name: "DewPointEnvironment", targets: ["DewPointEnvironment"]),
     .library(name: "EnvVars", targets: ["EnvVars"]),
     .library(name: "Models", targets: ["Models"]),
-    .library(name: "RelayClient", targets: ["RelayClient"]),
-    .library(name: "TemperatureSensorClient", targets: ["TemperatureSensorClient"]),
+    .library(name: "Client", targets: ["Client"]),
+    .library(name: "ClientLive", targets: ["ClientLive"]),
   ],
   dependencies: [
     .package(url: "https://github.com/adam-fowler/mqtt-nio.git", from: "2.0.0"),
@@ -39,8 +39,7 @@ let package = Package(
       dependencies: [
         "DewPointEnvironment",
         "EnvVars",
-        "RelayClient",
-        "TemperatureSensorClient",
+        "ClientLive",
         .product(name: "MQTTNIO", package: "mqtt-nio"),
         .product(name: "NIO", package: "swift-nio")
       ]
@@ -49,8 +48,7 @@ let package = Package(
       name: "DewPointEnvironment",
       dependencies: [
         "EnvVars",
-        "RelayClient",
-        "TemperatureSensorClient",
+        "Client",
         .product(name: "MQTTNIO", package: "mqtt-nio"),
       ]
     ),
@@ -63,20 +61,19 @@ let package = Package(
       dependencies: []
     ),
     .target(
-      name: "RelayClient",
+      name: "Client",
       dependencies: [
         "Models",
+        .product(name: "CoreUnitTypes", package: "swift-psychrometrics"),
         .product(name: "NIO", package: "swift-nio"),
-        .product(name: "MQTTNIO", package: "mqtt-nio")
+        .product(name: "Psychrometrics", package: "swift-psychrometrics")
       ]
     ),
     .target(
-      name: "TemperatureSensorClient",
+      name: "ClientLive",
       dependencies: [
-        "Models",
-        .product(name: "NIO", package: "swift-nio"),
-        .product(name: "MQTTNIO", package: "mqtt-nio"),
-        .product(name: "CoreUnitTypes", package: "swift-psychrometrics")
+        "Client",
+        .product(name: "MQTTNIO", package: "mqtt-nio")
       ]
     ),
   ]

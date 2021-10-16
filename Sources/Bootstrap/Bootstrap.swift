@@ -1,11 +1,10 @@
+import ClientLive
 import DewPointEnvironment
 import EnvVars
 import Logging
 import Foundation
 import MQTTNIO
 import NIO
-import RelayClient
-import TemperatureSensorClient
 
 public func bootstrap(
   eventLoopGroup: EventLoopGroup,
@@ -16,10 +15,9 @@ public func bootstrap(
     .map { (envVars) -> DewPointEnvironment in
       let mqttClient = MQTTClient(envVars: envVars, eventLoopGroup: eventLoopGroup, logger: logger)
       return DewPointEnvironment.init(
-        mqttClient: mqttClient,
+        client: .live(client: mqttClient),
         envVars: envVars,
-        relayClient: .live(client: mqttClient),
-        temperatureSensorClient: .live(client: mqttClient)
+        mqttClient: mqttClient
       )
     }
     .flatMap { environment in
