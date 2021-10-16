@@ -56,6 +56,7 @@ extension MQTTClient {
     )
   }
   
+  // MARK: - TODO it feels like the subscriptions should happen in the `bootstrap` process.
   fileprivate func fetchTemperature(
     sensor: TemperatureSensor,
     units: PsychrometricEnvironment.Units?
@@ -85,6 +86,7 @@ extension MQTTClient {
       }
   }
   
+  // MARK: - TODO it feels like the subscriptions should happen in the `bootstrap` process.
   fileprivate func fetchHumidity(sensor: HumiditySensor) -> EventLoopFuture<RelativeHumidity> {
     logger.debug("Adding listener for humidity sensor...")
     let subscription = MQTTSubscribeInfoV5.init(

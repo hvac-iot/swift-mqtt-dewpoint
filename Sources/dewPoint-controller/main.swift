@@ -3,7 +3,6 @@ import Logging
 import Models
 import MQTTNIO
 import NIO
-import RelayClient
 import Foundation
 
 var logger = Logger(label: "dewPoint-logger")
