@@ -1,0 +1,61 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "mqtt-nio",
+        "repositoryURL": "https://github.com/adam-fowler/mqtt-nio.git",
+        "state": {
+          "branch": null,
+          "revision": "976a4b6019e1dd365a0da793babadd5cc958ce2b",
+          "version": "2.1.1"
+        }
+      },
+      {
+        "package": "swift-log",
+        "repositoryURL": "https://github.com/apple/swift-log.git",
+        "state": {
+          "branch": null,
+          "revision": "5d66f7ba25daf4f94100e7022febf3c75e37a6c7",
+          "version": "1.4.2"
+        }
+      },
+      {
+        "package": "swift-nio",
+        "repositoryURL": "https://github.com/apple/swift-nio",
+        "state": {
+          "branch": null,
+          "revision": "6aa9347d9bc5bbfe6a84983aec955c17ffea96ef",
+          "version": "2.33.0"
+        }
+      },
+      {
+        "package": "swift-nio-ssl",
+        "repositoryURL": "https://github.com/apple/swift-nio-ssl.git",
+        "state": {
+          "branch": null,
+          "revision": "5e68c1ded15619bb281b273fa8c2d8fd7f7b2b7d",
+          "version": "2.16.1"
+        }
+      },
+      {
+        "package": "swift-nio-transport-services",
+        "repositoryURL": "https://github.com/apple/swift-nio-transport-services.git",
+        "state": {
+          "branch": null,
+          "revision": "e7f5278a26442dc46783ba7e063643d524e414a0",
+          "version": "1.11.3"
+        }
+      },
+      {
+        "package": "swift-psychrometrics",
+        "repositoryURL": "https://github.com/swift-psychrometrics/swift-psychrometrics",
+        "state": {
+          "branch": null,
+          "revision": "03573545c3750b406921eb22a9575c8062beef88",
+          "version": "0.1.2"
+        }
+      }
+    ]
+  },
+  "version": 1
+}

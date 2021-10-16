@@ -1,0 +1,8 @@
+{
+  "APP_ENV": "development",
+  "MQTT_HOST": "127.0.0.1",
+  "MQTT_PORT": "1883",
+  "MQTT_IDENTIFIER": "dewPoint-controller",
+  "MQTT_USERNAME": "mqtt_user",
+  "MQTT_PASSWORD": "secret!"
+}
