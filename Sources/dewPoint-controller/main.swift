@@ -8,7 +8,7 @@ import Foundation
 
 var logger: Logger = {
   var logger = Logger(label: "dewPoint-logger")
-  logger.logLevel = .info
+  logger.logLevel = .debug
   return logger
 }()
 
@@ -32,22 +32,24 @@ defer {
 }
 
 while true {
+//  let temp = try environment.mqttClient.fetchTemperature(tempSensor, .imperial).wait()
+//  logger.debug("Temp: \(temp.rawValue)")
   
   logger.debug("Fetching dew point...")
-  
+
   let dp = try environment.mqttClient.currentDewPoint(
     temperature: tempSensor,
     humidity: humiditySensor,
     units: .imperial
   ).wait()
-  
+
   logger.info("Dew Point: \(dp.rawValue) \(dp.units.symbol)")
-  
+
   try environment.mqttClient.publish(
     dewPoint: dp,
     to: environment.topics.sensors.dewPoint
   ).wait()
-  
+
   logger.debug("Published dew point...")
   
   Thread.sleep(forTimeInterval: 5)

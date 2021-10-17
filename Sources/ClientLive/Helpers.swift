@@ -1,4 +1,5 @@
 import CoreUnitTypes
+import Logging
 import Models
 import MQTTNIO
 import NIO
@@ -55,7 +56,7 @@ extension MQTTNIO.MQTTClient {
     let subscription = MQTTSubscribeInfoV5.init(
       topicFilter: sensor.topic,
       qos: .atLeastOnce,
-      retainAsPublished: true,
+      retainAsPublished: false,
       retainHandling: .sendAlways
     )
     return v5.subscribe(to: [subscription])
@@ -134,6 +135,16 @@ extension EventLoopFuture where Value == Temperature {
     map { currentTemperature in
       guard let units = units else { return currentTemperature }
       return currentTemperature.convert(to: units)
+    }
+  }
+}
+
+extension EventLoopFuture {
+  
+  func debug(logger: Logger?) -> EventLoopFuture<Value> {
+    map { value in
+      logger?.debug("Value: \(value)")
+      return value
     }
   }
 }

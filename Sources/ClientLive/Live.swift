@@ -15,10 +15,13 @@ extension Client.MQTTClient {
     .init(
       fetchHumidity: { sensor in
         client.fetch(sensor: sensor)
+          .debug(logger: client.logger)
       },
       fetchTemperature: { sensor, units in
         client.fetch(sensor: sensor)
+          .debug(logger: client.logger)
           .convertIfNeeded(to: units)
+          .debug(logger: client.logger)
       },
       setRelay: { relay, state in
         client.set(relay: relay, to: state)
