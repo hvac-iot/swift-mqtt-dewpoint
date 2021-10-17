@@ -20,6 +20,7 @@ public func bootstrap(
   logger?.debug("Bootstrapping Dew Point Controller...")
   
   return loadEnvVars(eventLoopGroup: eventLoopGroup, logger: logger)
+    .and(loadTopics(eventLoopGroup: eventLoopGroup, logger: logger))
     .makeDewPointEnvironment(eventLoopGroup: eventLoopGroup, logger: logger)
     .connectToMQTTBroker(logger: logger)
 }
@@ -68,7 +69,42 @@ private func loadEnvVars(eventLoopGroup: EventLoopGroup, logger: Logger?) -> Eve
   return eventLoopGroup.next().makeSucceededFuture(envVars)
 }
 
-extension EventLoopFuture where Value == EnvVars {
+func loadTopics(eventLoopGroup: EventLoopGroup, logger: Logger?) -> EventLoopFuture<Topics> {
+  
+  logger?.debug("Loading topics from file...")
+  
+  let topicsFilePath = URL(fileURLWithPath: #file)
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+    .appendingPathComponent(".topics")
+  
+  let decoder = JSONDecoder()
+  
+  let data = try? Data.init(contentsOf: topicsFilePath)
+  logger?.debug("Data: \(data!)")
+  
+  let localTopics = data
+    .flatMap { try? decoder.decode(Topics.self, from: $0) }
+
+//    .flatMap { try decoder.decode(Topics.self, from: $0) }
+  
+  logger?.debug(
+    localTopics == nil
+      ? "Failed to load topics from file, falling back to defaults."
+      : "Done loading topics from file."
+  )
+  
+//  let defaultData = Topics()
+//  let jsonData = try! JSONEncoder().encode(defaultData)
+//  let string = String.init(data: jsonData, encoding: .utf8)  ?? "Invalid data"
+//  logger?.debug("\(string)")
+//  try! string.write(to: topicsFilePath, atomically: true, encoding: .utf8)
+//  
+  return eventLoopGroup.next().makeSucceededFuture(localTopics ?? .init())
+}
+
+extension EventLoopFuture where Value == (EnvVars, Topics) {
   
   /// Creates the ``DewPointEnvironment`` for the application after the ``EnvVars`` have been loaded.
   ///
@@ -79,13 +115,13 @@ extension EventLoopFuture where Value == EnvVars {
     eventLoopGroup: EventLoopGroup,
     logger: Logger?
   ) -> EventLoopFuture<DewPointEnvironment> {
-      map { envVars in
+      map { envVars, topics in
         let nioClient = MQTTClient(envVars: envVars, eventLoopGroup: eventLoopGroup, logger: logger)
         return DewPointEnvironment.init(
           mqttClient: .live(client: nioClient),
           envVars: envVars,
           nioClient: nioClient,
-          topics: .init(envVars: envVars)
+          topics: topics
         )
       }
   }
@@ -124,25 +160,6 @@ extension MQTTClient {
         version: .v5_0,
         userName: envVars.userName,
         password: envVars.password
-      )
-    )
-  }
-}
-
-// MARK: - TODO Make topics loadable from a file in the root directory.
-extension Topics {
-  
-  init(envVars: EnvVars) {
-    self.init(
-      sensors: .init(
-        temperature: envVars.temperatureSensor,
-        humidity: envVars.humiditySensor,
-        dewPoint: envVars.dewPointTopic
-      ),
-      relays: .init(
-        dehumidification1: envVars.dehumidificationStage1Relay,
-        dehumidification2: envVars.dehumidificationStage2Relay,
-        humidification: envVars.humidificationRelay
       )
     )
   }

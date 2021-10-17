@@ -22,7 +22,7 @@ if environment.envVars.appEnv == .production {
   logger.logLevel = .info
 }
 
-let relay = Relay(topic: environment.topics.relays.dehumidification1)
+let relay = Relay(topic: environment.topics.commands.relays.dehumidification1)
 let tempSensor = Sensor<Temperature>(topic: environment.topics.sensors.temperature)
 let humiditySensor = Sensor<RelativeHumidity>(topic: environment.topics.sensors.humidity)
 

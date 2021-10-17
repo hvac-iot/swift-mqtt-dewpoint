@@ -1,0 +1,34 @@
+{
+  "sensors": {
+    "humidity": "sensors/humidity",
+    "temperature":"sensors/temperature",
+    "dewPoint":"sensors/dew_point"
+  },
+  "setPoints": {
+    "dehumidify":{
+      "lowDewPoint":"set_points/dehumidify/low_dew_point",
+      "highDewPoint":"set_points/dehumidify/high_dew_point",
+      "lowRelativeHumidity":"set_points/dehumidify/low_relative_humidity",
+      "highRelativeHumidity":"set_points/dehumidify/high_relative_humidity"
+    },
+    "humidify":{
+      "relativeHumidity":"set_points/humidify/relative_humidity",
+      "dewPoint":"set_points/humidify/dew_point"
+    }
+  },
+  "states":{
+    "mode":"states/mode",
+    "relays":{
+      "dehumdification1":"states/relays/dehumidification_1",
+      "humdification":"states/relays/humidification",
+      "dehumidification2":"states/relays/dehumidification_2"
+    }
+  },
+  "commands":{
+    "relays":{
+      "dehumidification2":"relays/dehumidification_2",
+      "humidification":"relays/humidification",
+      "dehumidification1":"relays/dehumidification_1"
+    }
+  }
+}
