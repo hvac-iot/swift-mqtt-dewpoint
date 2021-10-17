@@ -1,20 +1,24 @@
 import Client
 import EnvVars
+import Models
 import MQTTNIO
 
 public struct DewPointEnvironment {
   
-  public var client: Client
+  public var mqttClient: Client.MQTTClient
   public var envVars: EnvVars
-  public var mqttClient: MQTTClient
+  public var nioClient: MQTTNIO.MQTTClient
+  public var topics: Topics
   
   public init(
-    client: Client,
+    mqttClient: Client.MQTTClient,
     envVars: EnvVars,
-    mqttClient: MQTTClient
+    nioClient: MQTTNIO.MQTTClient,
+    topics: Topics = .init()
   ) {
     self.mqttClient = mqttClient
     self.envVars = envVars
-    self.client = client
+    self.nioClient = nioClient
+    self.topics = topics
   }
 }

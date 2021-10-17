@@ -1,46 +1,54 @@
 import Bootstrap
+import CoreUnitTypes
 import Logging
 import Models
 import MQTTNIO
 import NIO
 import Foundation
 
-var logger = Logger(label: "dewPoint-logger")
-logger.logLevel = .debug
-logger.debug("Swift Dew Point Controller!")
+var logger: Logger = {
+  var logger = Logger(label: "dewPoint-logger")
+  logger.logLevel = .info
+  return logger
+}()
+
+logger.info("Starting Swift Dew Point Controller!")
 
 let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 let environment = try bootstrap(eventLoopGroup: eventLoopGroup, logger: logger).wait()
-let relay = Relay(topic: "frankensystem/relays/switch/relay_1/command")
-let tempSensor = TemperatureSensor(topic: "frankensystem/relays/sensor/temperature_-_1/state")
-let humiditySensor = HumiditySensor(topic: "frankensystem/relays/sensor/humidity_-_1/state")
+
+// Set the log level to info only in production mode.
+if environment.envVars.appEnv == .production {
+  logger.logLevel = .info
+}
+
+let relay = Relay(topic: environment.topics.relays.dehumidification1)
+let tempSensor = Sensor<Temperature>(topic: environment.topics.sensors.temperature)
+let humiditySensor = Sensor<RelativeHumidity>(topic: environment.topics.sensors.humidity)
 
 defer {
   logger.debug("Disconnecting")
-  _ = try? environment.client.shutdown().wait()
-  try? environment.mqttClient.syncShutdownGracefully()
+  try? environment.mqttClient.shutdown().wait()
 }
 
 while true {
-//  logger.debug("Toggling relay.")
-//  _ = try environment.client.toggleRelay(relay).wait()
-  
-//  logger.debug("Reading temperature sensor.")
-//  let temp = try environment.client.fetchTemperature(tempSensor, .imperial).wait()
-//  logger.debug("Temperature: \(temp)")
-  
-//  logger.debug("Reading humidity sensor.")
-//  let humidity = try environment.client.fetchHumidity(humiditySensor).wait()
-//  logger.debug("Humdity: \(humidity)")
   
   logger.debug("Fetching dew point...")
-  let dp = try environment.client.fetchDewPoint(
+  
+  let dp = try environment.mqttClient.currentDewPoint(
     temperature: tempSensor,
     humidity: humiditySensor,
-    units: .imperial,
-    logger: logger
+    units: .imperial
   ).wait()
-  logger.debug("Dew Point: \(dp)")
+  
+  logger.info("Dew Point: \(dp.rawValue) \(dp.units.symbol)")
+  
+  try environment.mqttClient.publish(
+    dewPoint: dp,
+    to: environment.topics.sensors.dewPoint
+  ).wait()
+  
+  logger.debug("Published dew point...")
   
   Thread.sleep(forTimeInterval: 5)
 }

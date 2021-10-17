@@ -4,5 +4,11 @@
   "MQTT_PORT": "1883",
   "MQTT_IDENTIFIER": "dewPoint-controller",
   "MQTT_USERNAME": "mqtt_user",
-  "MQTT_PASSWORD": "secret!"
+  "MQTT_PASSWORD": "secret!",
+  "DEHUMIDIFICATION_STAGE_1_RELAY": "relays/dehumidification_1",
+  "DEHUMIDIFICATION_STAGE_2_RELAY": "relays/dehumidification_2",
+  "DEW_POINT_TOPIC": "sensors/dew_point",
+  "HUMIDIFICATION_RELAY": "relays/humidification",
+  "HUMIDITY_SENSOR": "sensors/humidity",
+  "TEMPERATURE_SENSOR": "sensors/temperature"
 }

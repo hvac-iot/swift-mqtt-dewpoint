@@ -24,6 +24,15 @@ public struct EnvVars: Codable, Equatable {
   /// The MQTT user password.
   public var password: String?
   
+  // MARK: TODO Move Topics to their own file that can be loaded.
+  // Topics
+  public var dehumidificationStage1Relay: String
+  public var dehumidificationStage2Relay: String
+  public var dewPointTopic: String
+  public var humidificationRelay: String
+  public var humiditySensor: String
+  public var temperatureSensor: String
+  
   /// Create a new ``EnvVars``
   ///
   /// - Parameters:
@@ -39,7 +48,13 @@ public struct EnvVars: Codable, Equatable {
     port: String? = "1883",
     identifier: String = "dewPoint-controller",
     userName: String? = "mqtt_user",
-    password: String? = "secret!"
+    password: String? = "secret!",
+    dehumidificationStage1Relay: String = "relays/dehumidification_1",
+    dehumidificationStage2Relay: String = "relays/dehumidification_2",
+    dewPointTopic: String = "sensors/dew_point",
+    humidificationRelay: String = "relays/humidification",
+    humiditySensor: String = "sensors/humidity",
+    temperatureSensor: String = "sensors/temperature"
   ){
     self.appEnv = appEnv
     self.host = host
@@ -47,6 +62,12 @@ public struct EnvVars: Codable, Equatable {
     self.identifier = identifier
     self.userName = userName
     self.password = password
+    self.dehumidificationStage1Relay = dehumidificationStage1Relay
+    self.dehumidificationStage2Relay = dehumidificationStage2Relay
+    self.dewPointTopic = dewPointTopic
+    self.humidificationRelay = humidificationRelay
+    self.humiditySensor = humiditySensor
+    self.temperatureSensor = temperatureSensor
   }
   
   /// Custom coding keys.
@@ -57,6 +78,12 @@ public struct EnvVars: Codable, Equatable {
     case identifier = "MQTT_IDENTIFIER"
     case userName = "MQTT_USERNAME"
     case password = "MQTT_PASSWORD"
+    case dehumidificationStage1Relay = "DEHUMIDIFICATION_STAGE_1_RELAY"
+    case dehumidificationStage2Relay = "DEHUMIDIFICATION_STAGE_2_RELAY"
+    case dewPointTopic = "DEW_POINT_TOPIC"
+    case humidificationRelay = "HUMIDIFICATION_RELAY"
+    case humiditySensor = "HUMIDITY_SENSOR"
+    case temperatureSensor = "TEMPERATURE_SENSOR"
   }
   
   /// Represents the different app environments.

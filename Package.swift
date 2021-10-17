@@ -40,6 +40,7 @@ let package = Package(
         "DewPointEnvironment",
         "EnvVars",
         "ClientLive",
+        "Models",
         .product(name: "MQTTNIO", package: "mqtt-nio"),
         .product(name: "NIO", package: "swift-nio")
       ]
@@ -49,6 +50,7 @@ let package = Package(
       dependencies: [
         "EnvVars",
         "Client",
+        "Models",
         .product(name: "MQTTNIO", package: "mqtt-nio"),
       ]
     ),
@@ -58,7 +60,9 @@ let package = Package(
     ),
     .target(
       name: "Models",
-      dependencies: []
+      dependencies: [
+        .product(name: "CoreUnitTypes", package: "swift-psychrometrics"),
+      ]
     ),
     .target(
       name: "Client",
