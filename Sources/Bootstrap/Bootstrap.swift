@@ -12,9 +12,11 @@ import NIO
 /// - Parameters:
 ///   - eventLoopGroup: The event loop group for the application.
 ///   - logger: An optional logger for debugging.
+///   - autoConnect: A flag whether to auto-connect to the MQTT broker or not.
 public func bootstrap(
   eventLoopGroup: EventLoopGroup,
-  logger: Logger? = nil
+  logger: Logger? = nil,
+  autoConnect: Bool = true
 ) -> EventLoopFuture<DewPointEnvironment> {
   
   logger?.debug("Bootstrapping Dew Point Controller...")
@@ -22,7 +24,7 @@ public func bootstrap(
   return loadEnvVars(eventLoopGroup: eventLoopGroup, logger: logger)
     .and(loadTopics(eventLoopGroup: eventLoopGroup, logger: logger))
     .makeDewPointEnvironment(eventLoopGroup: eventLoopGroup, logger: logger)
-    .connectToMQTTBroker(logger: logger)
+    .connectToMQTTBroker(autoConnect: autoConnect, logger: logger)
 }
 
 /// Loads the ``EnvVars`` either using the defualts, from a file in the root directory under `.dewPoint-env` or in the shell / application environment.
@@ -30,7 +32,10 @@ public func bootstrap(
 /// - Parameters:
 ///   - eventLoopGroup: The event loop group for the application.
 ///   - logger: An optional logger for debugging.
-private func loadEnvVars(eventLoopGroup: EventLoopGroup, logger: Logger?) -> EventLoopFuture<EnvVars> {
+private func loadEnvVars(
+  eventLoopGroup: EventLoopGroup,
+  logger: Logger?
+) -> EventLoopFuture<EnvVars> {
   
   logger?.debug("Loading env vars...")
   
@@ -69,7 +74,13 @@ private func loadEnvVars(eventLoopGroup: EventLoopGroup, logger: Logger?) -> Eve
   return eventLoopGroup.next().makeSucceededFuture(envVars)
 }
 
-func loadTopics(eventLoopGroup: EventLoopGroup, logger: Logger?) -> EventLoopFuture<Topics> {
+// MARK: TODO perhaps make loading from file an option passed in when app is launched.
+/// Load the topics from file in application root directory at `.topics`, if available or fall back to the defualt.
+///
+///  - Parameters:
+///   - eventLoopGroup: The event loop group for the application.
+///   - logger: An optional logger for debugging.
+private func loadTopics(eventLoopGroup: EventLoopGroup, logger: Logger?) -> EventLoopFuture<Topics> {
   
   logger?.debug("Loading topics from file...")
   
@@ -81,13 +92,9 @@ func loadTopics(eventLoopGroup: EventLoopGroup, logger: Logger?) -> EventLoopFut
   
   let decoder = JSONDecoder()
   
-  let data = try? Data.init(contentsOf: topicsFilePath)
-  logger?.debug("Data: \(data!)")
-  
-  let localTopics = data
+  // Attempt to load the topics from file in root directory.
+  let localTopics = (try? Data.init(contentsOf: topicsFilePath))
     .flatMap { try? decoder.decode(Topics.self, from: $0) }
-
-//    .flatMap { try decoder.decode(Topics.self, from: $0) }
   
   logger?.debug(
     localTopics == nil
@@ -95,12 +102,7 @@ func loadTopics(eventLoopGroup: EventLoopGroup, logger: Logger?) -> EventLoopFut
       : "Done loading topics from file."
   )
   
-//  let defaultData = Topics()
-//  let jsonData = try! JSONEncoder().encode(defaultData)
-//  let string = String.init(data: jsonData, encoding: .utf8)  ?? "Invalid data"
-//  logger?.debug("\(string)")
-//  try! string.write(to: topicsFilePath, atomically: true, encoding: .utf8)
-//  
+  // If we were able to load from file use that, else fallback to the defaults.
   return eventLoopGroup.next().makeSucceededFuture(localTopics ?? .init())
 }
 
@@ -133,8 +135,9 @@ extension EventLoopFuture where Value == DewPointEnvironment {
   ///
   /// - Parameters:
   ///   - logger: An optional logger for debugging.
-  fileprivate func connectToMQTTBroker(logger: Logger?) -> EventLoopFuture<DewPointEnvironment> {
-    flatMap { environment in
+  fileprivate func connectToMQTTBroker(autoConnect: Bool, logger: Logger?) -> EventLoopFuture<DewPointEnvironment> {
+    guard autoConnect else { return self }
+    return flatMap { environment in
       logger?.debug("Connecting to MQTT Broker...")
       return environment.nioClient.connect()
         .map { _ in
@@ -145,11 +148,9 @@ extension EventLoopFuture where Value == DewPointEnvironment {
   }
 }
 
-// MARK: - Helpers
-
 extension MQTTClient {
   
-  convenience init(envVars: EnvVars, eventLoopGroup: EventLoopGroup, logger: Logger?) {
+  fileprivate convenience init(envVars: EnvVars, eventLoopGroup: EventLoopGroup, logger: Logger?) {
     self.init(
       host: envVars.host,
       port: envVars.port != nil ? Int(envVars.port!) : nil,

@@ -8,7 +8,7 @@ import Foundation
 
 var logger: Logger = {
   var logger = Logger(label: "dewPoint-logger")
-  logger.logLevel = .debug
+  logger.logLevel = .info
   return logger
 }()
 
