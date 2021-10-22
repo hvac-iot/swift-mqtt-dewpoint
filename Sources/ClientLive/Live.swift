@@ -1,5 +1,5 @@
 import Foundation
-import Client
+@_exported import Client
 import CoreUnitTypes
 import Models
 import MQTTNIO
@@ -11,10 +11,14 @@ extension Client.MQTTClient {
   ///
   /// - Parameters:
   ///   - client: The ``MQTTNIO.MQTTClient`` used to send and recieve messages from the MQTT Broker.
-  public static func live(client: MQTTNIO.MQTTClient) -> Self {
+  public static func live(client: MQTTNIO.MQTTClient, topics: Topics) -> Self {
     .init(
       fetchHumidity: { sensor in
         client.fetch(sensor: sensor)
+          .debug(logger: client.logger)
+      },
+      fetchSetPoint: { setPointKeyPath in
+        client.fetch(client.mqttSubscription(topic: topics.setPoints[keyPath: setPointKeyPath]))
           .debug(logger: client.logger)
       },
       fetchTemperature: { sensor, units in
@@ -23,8 +27,8 @@ extension Client.MQTTClient {
           .convertIfNeeded(to: units)
           .debug(logger: client.logger)
       },
-      setRelay: { relay, state in
-        client.set(relay: relay, to: state)
+      setRelay: { relayKeyPath, state in
+        client.set(relay: topics.commands.relays[keyPath: relayKeyPath], to: state)
       },
       shutdown: {
         client.disconnect()

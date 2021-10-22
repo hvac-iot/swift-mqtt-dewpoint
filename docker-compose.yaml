@@ -1,0 +1,22 @@
+# run this with docker-compose -f docker/docker-compose.yml run test
+version: "3.3"
+
+services:
+  test:
+    image: swift:5.3
+    working_dir: /dewPoint-controller
+    volumes:
+      - .:/dewPoint-controller
+    depends_on:
+      - mosquitto
+    environment:
+      - MOSQUITTO_SERVER=mosquitto
+    command: /bin/bash -xcl "swift test --enable-test-discovery --sanitize=thread"
+
+  mosquitto:
+    image: eclipse-mosquitto
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/certs:/mosquitto/certs
+    ports:
+      - "1883:1883"

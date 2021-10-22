@@ -34,7 +34,11 @@ defer {
 while true {
 //  let temp = try environment.mqttClient.fetchTemperature(tempSensor, .imperial).wait()
 //  logger.debug("Temp: \(temp.rawValue)")
-  
+//
+//  logger.debug("Fetching set-point...")
+//  let sp = try environment.mqttClient.fetchSetPoint(\.dehumidify.highDewPoint).wait()
+//  logger.debug("Set point: \(sp)")
+//
   logger.debug("Fetching dew point...")
 
   let dp = try environment.mqttClient.currentDewPoint(

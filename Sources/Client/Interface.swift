@@ -9,15 +9,18 @@ import Psychrometrics
 ///
 /// This is an abstraction around the ``MQTTNIO.MQTTClient``.
 public struct MQTTClient {
-  
+    
   /// Retrieve the humidity from the MQTT Broker.
   public var fetchHumidity: (Sensor<RelativeHumidity>) -> EventLoopFuture<RelativeHumidity>
+  
+  /// Retrieve a set point from the MQTT Broker.
+  public var fetchSetPoint: (KeyPath<Topics.SetPoints, String>) -> EventLoopFuture<Double>
   
   /// Retrieve the temperature from the MQTT Broker.
   public var fetchTemperature: (Sensor<Temperature>, PsychrometricEnvironment.Units?) -> EventLoopFuture<Temperature>
   
   /// Publish a change of state message for a relay.
-  public var setRelay: (Relay, Relay.State) -> EventLoopFuture<Void>
+  public var setRelay: (KeyPath<Topics.Commands.Relays, String>, Relay.State) -> EventLoopFuture<Void>
   
   /// Disconnect and close the connection to the MQTT Broker.
   public var shutdown: () -> EventLoopFuture<Void>
@@ -27,12 +30,14 @@ public struct MQTTClient {
   
   public init(
     fetchHumidity: @escaping (Sensor<RelativeHumidity>) -> EventLoopFuture<RelativeHumidity>,
+    fetchSetPoint: @escaping (KeyPath<Topics.SetPoints, String>) -> EventLoopFuture<Double>,
     fetchTemperature: @escaping (Sensor<Temperature>, PsychrometricEnvironment.Units?) -> EventLoopFuture<Temperature>,
-    setRelay: @escaping (Relay, Relay.State) -> EventLoopFuture<Void>,
+    setRelay: @escaping (KeyPath<Topics.Commands.Relays, String>, Relay.State) -> EventLoopFuture<Void>,
     shutdown: @escaping () -> EventLoopFuture<Void>,
     publishDewPoint: @escaping (DewPoint, String) -> EventLoopFuture<Void>
   ) {
     self.fetchHumidity = fetchHumidity
+    self.fetchSetPoint = fetchSetPoint
     self.fetchTemperature = fetchTemperature
     self.setRelay = setRelay
     self.shutdown = shutdown
@@ -60,7 +65,7 @@ public struct MQTTClient {
   /// - Parameters:
   ///   - relay: The relay to send the message to.
   ///   - state: The state to change the relay to.
-  public func `set`(relay: Relay, to state: Relay.State) -> EventLoopFuture<Void> {
+  public func `set`(relay: KeyPath<Topics.Commands.Relays, String>, to state: Relay.State) -> EventLoopFuture<Void> {
     setRelay(relay, state)
   }
   

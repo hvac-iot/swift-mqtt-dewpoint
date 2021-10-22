@@ -5,7 +5,7 @@ public struct Topics: Codable, Equatable {
   /// The command topics the application can publish to.
   public var commands: Commands
   
-  /// The sensor topics the application can read sensor values from.
+  /// The sensor topics the application can read from / write to.
   public var sensors: Sensors
   
   /// The set point topics the application can read set point values from.

@@ -80,5 +80,12 @@ let package = Package(
         .product(name: "MQTTNIO", package: "mqtt-nio")
       ]
     ),
+    .testTarget(
+      name: "ClientTests",
+      dependencies: [
+        "Client",
+        "ClientLive"
+      ]
+    ),
   ]
 )

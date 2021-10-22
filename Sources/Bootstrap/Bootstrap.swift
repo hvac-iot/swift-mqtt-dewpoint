@@ -120,7 +120,7 @@ extension EventLoopFuture where Value == (EnvVars, Topics) {
       map { envVars, topics in
         let nioClient = MQTTClient(envVars: envVars, eventLoopGroup: eventLoopGroup, logger: logger)
         return DewPointEnvironment.init(
-          mqttClient: .live(client: nioClient),
+          mqttClient: .live(client: nioClient, topics: topics),
           envVars: envVars,
           nioClient: nioClient,
           topics: topics
@@ -148,7 +148,7 @@ extension EventLoopFuture where Value == DewPointEnvironment {
   }
 }
 
-extension MQTTClient {
+extension MQTTNIO.MQTTClient {
   
   fileprivate convenience init(envVars: EnvVars, eventLoopGroup: EventLoopGroup, logger: Logger?) {
     self.init(

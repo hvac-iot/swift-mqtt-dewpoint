@@ -43,7 +43,54 @@ enum MQTTError: Error {
   case relay(reason: String, error: Error?)
 }
 
+protocol FetchableTopic {
+  associatedtype Value: BufferInitalizable
+  var topic: String { get }
+}
+
+extension Double: BufferInitalizable {
+  
+  init?(buffer: inout ByteBuffer) {
+    guard let string = buffer.readString(length: buffer.readableBytes) else {
+      return nil
+    }
+    self.init(string)
+  }
+}
+
+//extension SetPoint: FetchableTopic {
+//  typealias Value = Double
+//}
+
+extension Sensor: FetchableTopic where Reading: BufferInitalizable {
+  typealias Value = Reading
+}
+
 extension MQTTNIO.MQTTClient {
+  
+  func mqttSubscription(topic: String, qos: MQTTQoS = .atLeastOnce, retainAsPublished: Bool = true, retainHandling: MQTTSubscribeInfoV5.RetainHandling = .sendAlways)  -> MQTTSubscribeInfoV5 {
+    .init(topicFilter: topic, qos: qos, retainAsPublished: retainAsPublished, retainHandling: retainHandling)
+  }
+  
+  func fetch<Value>(
+    _ subscription: MQTTSubscribeInfoV5
+  ) -> EventLoopFuture<Value> where Value: BufferInitalizable {
+    logger.debug("Fetching data for: \(subscription.topicFilter)")
+    return v5.subscribe(to: [subscription])
+      .flatMap { _ in
+        let promise = self.eventLoopGroup.next().makePromise(of: Value.self)
+        self.addPublishListener(named: subscription.topicFilter + "-listener") { result in
+          
+          result.mapBuffer(to: Value.self)
+            .unwrap(or: MQTTError.sensor(reason: "Invalid sensor reading", error: nil))
+            .fullfill(promise: promise)
+          
+          self.logger.debug("Done fetching data for: \(subscription.topicFilter)")
+        }
+        
+        return promise.futureResult
+      }
+  }
   
   /// Fetch a sensor state and convert it appropriately, when the sensor type is ``BufferInitializable``.
   ///
@@ -52,32 +99,17 @@ extension MQTTNIO.MQTTClient {
   func fetch<S>(
     sensor: Sensor<S>
   ) -> EventLoopFuture<S> where S: BufferInitalizable {
-    logger.debug("Fetching data for sensor: \(sensor.topic)")
-    let subscription = MQTTSubscribeInfoV5.init(
-      topicFilter: sensor.topic,
-      qos: .atLeastOnce,
-      retainAsPublished: false,
-      retainHandling: .sendAlways
-    )
-    return v5.subscribe(to: [subscription])
-      .flatMap { _ in
-        let promise = self.eventLoopGroup.next().makePromise(of: S.self)
-        self.addPublishListener(named: sensor.topic) { result in
-          
-          result.mapBuffer(to: S.self)
-            .unwrap(or: MQTTError.sensor(reason: "Invalid sensor reading", error: nil))
-            .fullfill(promise: promise)
-          
-          self.logger.debug("Done fetching data for sensor: \(sensor.topic)")
-        }
-        
-        return promise.futureResult
-      }
+    return fetch(mqttSubscription(topic: sensor.topic))
   }
   
-  func `set`(relay: Relay, to state: Relay.State, qos: MQTTQoS = .atLeastOnce) -> EventLoopFuture<Void> {
+  func fetch(setPoint: KeyPath<Topics.SetPoints, String>, setPoints: Topics.SetPoints) -> EventLoopFuture<Double> {
+//    logger.debug("Fetching data for set point: \(setPoint.topic)")
+    return fetch(mqttSubscription(topic: setPoints[keyPath: setPoint]))
+  }
+  
+  func `set`(relay relayTopic: String, to state: Relay.State, qos: MQTTQoS = .atLeastOnce) -> EventLoopFuture<Void> {
     publish(
-      to: relay.topic,
+      to: relayTopic,
       payload: ByteBufferAllocator().buffer(string: state.rawValue),
       qos: qos
     )
