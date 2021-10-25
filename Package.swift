@@ -15,6 +15,7 @@ let package = Package(
     .library(name: "Models", targets: ["Models"]),
     .library(name: "Client", targets: ["Client"]),
     .library(name: "ClientLive", targets: ["ClientLive"]),
+    .library(name: "MQTTStore", targets: ["MQTTStore"]),
   ],
   dependencies: [
     .package(url: "https://github.com/adam-fowler/mqtt-nio.git", from: "2.0.0"),
@@ -87,5 +88,15 @@ let package = Package(
         "ClientLive"
       ]
     ),
+    .target(
+      name: "MQTTStore",
+      dependencies: [
+        .product(name: "MQTTNIO", package: "mqtt-nio")
+      ]
+    ),
+    .testTarget(
+      name: "MQTTStoreTests",
+      dependencies: ["MQTTStore"]
+    )
   ]
 )

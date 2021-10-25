@@ -16,7 +16,10 @@ start-mosquitto:
 		--name mosquitto \
 		-d \
 		-p 1883:1883 \
-		-v $(PWD)/mosquitto/config:/mosquitto/config \
+		-p 8883:8883 \
+		-p 8080:8080 \
+		-p 8081:8081 \
+		-v "$(PWD)/mosquitto/config:/mosquitto/config" \
 		eclipse-mosquitto
 
 stop-mosquitto:

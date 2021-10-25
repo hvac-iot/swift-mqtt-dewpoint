@@ -68,7 +68,12 @@ extension Sensor: FetchableTopic where Reading: BufferInitalizable {
 
 extension MQTTNIO.MQTTClient {
   
-  func mqttSubscription(topic: String, qos: MQTTQoS = .atLeastOnce, retainAsPublished: Bool = true, retainHandling: MQTTSubscribeInfoV5.RetainHandling = .sendAlways)  -> MQTTSubscribeInfoV5 {
+  func mqttSubscription(
+    topic: String,
+    qos: MQTTQoS = .atLeastOnce,
+    retainAsPublished: Bool = true,
+    retainHandling: MQTTSubscribeInfoV5.RetainHandling = .sendAlways
+  )  -> MQTTSubscribeInfoV5 {
     .init(topicFilter: topic, qos: qos, retainAsPublished: retainAsPublished, retainHandling: retainHandling)
   }
   
@@ -103,7 +108,6 @@ extension MQTTNIO.MQTTClient {
   }
   
   func fetch(setPoint: KeyPath<Topics.SetPoints, String>, setPoints: Topics.SetPoints) -> EventLoopFuture<Double> {
-//    logger.debug("Fetching data for set point: \(setPoint.topic)")
     return fetch(mqttSubscription(topic: setPoints[keyPath: setPoint]))
   }
   
