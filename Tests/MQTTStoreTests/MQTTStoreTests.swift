@@ -29,6 +29,22 @@ final class ServerTests: XCTestCase {
     try store.destroy().wait()
   }
   
+  func createClient(identifier: String? = nil) -> MQTTClient {
+    MQTTClient(
+      host: serverDetails.hostname,
+      identifier: identifier ?? serverDetails.identifier,
+      eventLoopGroupProvider: .createNew,
+      logger: logger,
+      configuration: .init(
+        version: serverDetails.version,
+        userName: serverDetails.username,
+        password: serverDetails.password,
+        useSSL: serverDetails.useTLS,
+        useWebSockets: serverDetails.useWebSocket,
+        webSocketURLPath: serverDetails.webSocketUrl
+      )
+    )
+  }
   
   func createTestStore() -> MQTTStore<TestState> {
     .init(
