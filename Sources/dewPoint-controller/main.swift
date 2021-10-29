@@ -23,8 +23,8 @@ if environment.envVars.appEnv == .production {
 }
 
 let relay = Relay(topic: environment.topics.commands.relays.dehumidification1)
-let tempSensor = Sensor<Temperature>(topic: environment.topics.sensors.temperature)
-let humiditySensor = Sensor<RelativeHumidity>(topic: environment.topics.sensors.humidity)
+let tempSensor = Sensor<Temperature>(topic: environment.topics.sensors.returnSensor.temperature)
+let humiditySensor = Sensor<RelativeHumidity>(topic: environment.topics.sensors.returnSensor.humidity)
 
 defer {
   logger.debug("Disconnecting")
@@ -51,7 +51,7 @@ while true {
 
   try environment.mqttClient.publish(
     dewPoint: dp,
-    to: environment.topics.sensors.dewPoint
+    to: environment.topics.sensors.returnSensor.dewPoint
   ).wait()
 
   logger.debug("Published dew point...")
