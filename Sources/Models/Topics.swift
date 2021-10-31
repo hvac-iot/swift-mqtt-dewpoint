@@ -41,43 +41,17 @@ public struct Topics: Codable, Equatable {
     public var returnAirSensor: TemperatureAndHumiditySensor<State.Sensors.Return>
     public var supplyAirSensor: TemperatureAndHumiditySensor<State.Sensors.Supply>
     
-    // TODO: Fix defaults.
     public init(
-      mixedAirSensor: TemperatureAndHumiditySensor<State.Sensors.Mixed> = .init(),
-      postCoilSensor: TemperatureAndHumiditySensor<State.Sensors.PostCoil> = .init(),
-      returnAirSensor: TemperatureAndHumiditySensor<State.Sensors.Return> = .init(),
-      supplyAirSensor: TemperatureAndHumiditySensor<State.Sensors.Supply> = .init()
+      mixedAirSensor: TemperatureAndHumiditySensor<State.Sensors.Mixed> = .default(location: "mixed=air"),
+      postCoilSensor: TemperatureAndHumiditySensor<State.Sensors.PostCoil> = .default(location: "post-coil"),
+      returnAirSensor: TemperatureAndHumiditySensor<State.Sensors.Return> = .default(location: "return"),
+      supplyAirSensor: TemperatureAndHumiditySensor<State.Sensors.Supply> = .default(location: "supply")
     ) {
       self.mixedAirSensor = mixedAirSensor
       self.postCoilSensor = postCoilSensor
       self.returnAirSensor = returnAirSensor
       self.supplyAirSensor = supplyAirSensor
     }
-    
-//    /// The temperature sensor topic.
-//    public var temperature: String
-//
-//    /// The humidity sensor topic.
-//    public var humidity: String
-//
-//    /// The dew point topic (we write / publish this data from the application).
-//    public var dewPoint: String
-//
-//    /// Create a new sensor topic container.
-//    ///
-//    /// - Parameters:
-//    ///   - temperature: The temperature sensor topic.
-//    ///   - humidity: The humidity sensor topic.
-//    ///   - dewPoint: The dew point sensor topic.
-//    public init(
-//      temperature: String = "sensors/temperature",
-//      humidity: String = "sensors/humidity",
-//      dewPoint: String = "sensors/dew_point"
-//    ) {
-//      self.temperature = temperature
-//      self.humidity = humidity
-//      self.dewPoint = dewPoint
-//    }
     
     public struct TemperatureAndHumiditySensor<Location>: Codable, Equatable {
       public var temperature: String
@@ -92,10 +66,10 @@ public struct Topics: Codable, Equatable {
       ///   - humidity: The humidity sensor topic.
       ///   - dewPoint: The dew point sensor topic.
       public init(
-        temperature: String = "sensors/temperature",
-        humidity: String = "sensors/humidity",
-        dewPoint: String = "sensors/dew_point",
-        enthalpy: String = "sensors/enthalpy"
+        temperature: String,
+        humidity: String,
+        dewPoint: String,
+        enthalpy: String
       ) {
         self.temperature = temperature
         self.humidity = humidity
@@ -279,5 +253,17 @@ public struct Topics: Codable, Equatable {
         self.humidification = humidification
       }
     }
+  }
+}
+
+// MARK: Helpers
+extension Topics.Sensors.TemperatureAndHumiditySensor {
+  public static func `default`(location: String) -> Self {
+    .init(
+      temperature: "sensors/\(location)/temperature",
+      humidity: "sensors/\(location)/humidity",
+      dewPoint: "sensors/\(location)/dew-point",
+      enthalpy: "sensors/\(location)/enthalpy"
+    )
   }
 }

@@ -55,58 +55,17 @@ extension Client2 {
     topics: Topics
   ) -> Self {
     .init(
-      // TODO: Fix adding listeners in a more generic way.
       addListeners: {
-//        state.addSensorListeners(to: client, topics: topics)
-        client.addPublishListener(named: topics.sensors.returnAirSensor.temperature) { result in
-          let topic = topics.sensors.returnAirSensor.temperature
-          result.logIfFailure(client: client, topic: topic)
-            .parse(as: Temperature.self)
-            .map { temperature -> () in
-              state.sensors.returnAirSensor.temperature = temperature
-            }
-        }
-        client.addPublishListener(named: topics.sensors.returnAirSensor.humidity) { result in
-          let topic = topics.sensors.returnAirSensor.humidity
-          result.logIfFailure(client: client, topic: topic)
-            .parse(as: RelativeHumidity.self)
-            .map { humidity -> () in
-              state.sensors.returnAirSensor.humidity = humidity
-            }
-        }
+        state.addSensorListeners(to: client, topics: topics)
       },
       connect: {
         client.connect()
           .map { _ in }
       },
       publishSensor: { request in
-        guard let (dewPoint, topic) = request.dewPointData(topics: topics, units: state.units)
-        else {
-          client.logger.debug("No dew point for sensor.")
-          return client.eventLoopGroup.next().makeSucceededVoidFuture()
-        }
-        client.logger.debug("Publishing dew-point: \(dewPoint), to: \(topic)")
-        return client.publish(
-          to: topic,
-          payload: ByteBufferAllocator().buffer(string: "\(dewPoint.rawValue)"),
-          qos: .atLeastOnce
-        )
-        .flatMap {
-          guard let (enthalpy, topic) = request.enthalpyData(altitude: state.altitude, topics: topics, units: state.units)
-          else {
-            client.logger.debug("No enthalpy for sensor.")
-            return client.eventLoopGroup.next().makeSucceededVoidFuture()
-          }
-          client.logger.debug("Publishing enthalpy: \(enthalpy), to: \(topic)")
-          return client.publish(
-            to: topic,
-            payload: ByteBufferAllocator().buffer(string: "\(enthalpy.rawValue)"),
-            qos: .atLeastOnce
-          )
-        }
-        .map {
-          request.setHasProcessed(state: state)
-        }
+        client.publishDewPoint(request: request, state: state, topics: topics)
+          .publishEnthalpy()
+          .setHasProcessed()
       },
       shutdown: {
         client.disconnect()
@@ -164,6 +123,7 @@ struct TemperatureAndHumiditySensorKeyPathEnvelope {
   func addListener(to client: MQTTNIO.MQTTClient, topics: Topics, state: State) {
     
     let temperatureTopic = topics.sensors[keyPath: temperatureTopic]
+    client.logger.trace("Adding listener for topic: \(temperatureTopic)")
     client.addPublishListener(named: temperatureTopic) { result in
       result.logIfFailure(client: client, topic: temperatureTopic)
         .parse(as: Temperature.self)
@@ -173,6 +133,7 @@ struct TemperatureAndHumiditySensorKeyPathEnvelope {
     }
     
     let humidityTopic = topics.sensors[keyPath: humidityTopic]
+    client.logger.trace("Adding listener for topic: \(humidityTopic)")
     client.addPublishListener(named: humidityTopic) { result in
       result.logIfFailure(client: client, topic: humidityTopic)
         .parse(as: RelativeHumidity.self)
@@ -284,6 +245,61 @@ extension Client2.SensorPublishRequest {
       state.sensors.returnAirSensor.needsProcessed = false
     case .supply:
       state.sensors.supplyAirSensor.needsProcessed = false
+    }
+  }
+}
+
+extension MQTTNIO.MQTTClient {
+  
+  func publishDewPoint(
+    request: Client2.SensorPublishRequest,
+    state: State,
+    topics: Topics
+  ) -> EventLoopFuture<(MQTTNIO.MQTTClient, Client2.SensorPublishRequest, State, Topics)> {
+    guard let (dewPoint, topic) = request.dewPointData(topics: topics, units: state.units)
+    else {
+      logger.trace("No dew point for sensor.")
+      return eventLoopGroup.next().makeSucceededFuture((self, request, state, topics))
+    }
+    logger.debug("Publishing dew-point: \(dewPoint), to: \(topic)")
+    return publish(
+      to: topic,
+      payload: ByteBufferAllocator().buffer(string: "\(dewPoint.rawValue)"),
+      qos: .atLeastOnce
+    )
+    .map { (self, request, state, topics) }
+  }
+}
+
+extension EventLoopFuture where Value == (Client2.SensorPublishRequest, State) {
+  func setHasProcessed(
+//    request: Client2.SensorPublishRequest, state: State
+  ) -> EventLoopFuture<Void> {
+    map { request, state in
+      request.setHasProcessed(state: state)
+    }
+  }
+}
+
+extension EventLoopFuture where Value == (MQTTNIO.MQTTClient, Client2.SensorPublishRequest, State, Topics) {
+  func publishEnthalpy(
+//    request: Client2.SensorPublishRequest,
+//    state: State,
+//    topics: Topics
+  ) -> EventLoopFuture<(Client2.SensorPublishRequest, State)> {
+    flatMap { client, request, state, topics in
+      guard let (enthalpy, topic) = request.enthalpyData(altitude: state.altitude, topics: topics, units: state.units)
+      else {
+        client.logger.trace("No enthalpy for sensor.")
+        return client.eventLoopGroup.next().makeSucceededFuture((request, state))
+      }
+      client.logger.debug("Publishing enthalpy: \(enthalpy), to: \(topic)")
+      return client.publish(
+        to: topic,
+        payload: ByteBufferAllocator().buffer(string: "\(enthalpy.rawValue)"),
+        qos: .atLeastOnce
+      )
+        .map { (request, state) }
     }
   }
 }
