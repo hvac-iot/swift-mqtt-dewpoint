@@ -38,20 +38,20 @@ public struct Topics: Codable, Equatable {
     
     public var mixedAirSensor: TemperatureAndHumiditySensor<State.Sensors.Mixed>
     public var postCoilSensor: TemperatureAndHumiditySensor<State.Sensors.PostCoil>
-    public var returnSensor: TemperatureAndHumiditySensor<State.Sensors.Return>
-    public var supplySensor: TemperatureAndHumiditySensor<State.Sensors.Supply>
+    public var returnAirSensor: TemperatureAndHumiditySensor<State.Sensors.Return>
+    public var supplyAirSensor: TemperatureAndHumiditySensor<State.Sensors.Supply>
     
     // TODO: Fix defaults.
     public init(
       mixedAirSensor: TemperatureAndHumiditySensor<State.Sensors.Mixed> = .init(),
       postCoilSensor: TemperatureAndHumiditySensor<State.Sensors.PostCoil> = .init(),
-      returnSensor: TemperatureAndHumiditySensor<State.Sensors.Return> = .init(),
-      supplySensor: TemperatureAndHumiditySensor<State.Sensors.Supply> = .init()
+      returnAirSensor: TemperatureAndHumiditySensor<State.Sensors.Return> = .init(),
+      supplyAirSensor: TemperatureAndHumiditySensor<State.Sensors.Supply> = .init()
     ) {
       self.mixedAirSensor = mixedAirSensor
       self.postCoilSensor = postCoilSensor
-      self.returnSensor = returnSensor
-      self.supplySensor = supplySensor
+      self.returnAirSensor = returnAirSensor
+      self.supplyAirSensor = supplyAirSensor
     }
     
 //    /// The temperature sensor topic.

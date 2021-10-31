@@ -62,7 +62,7 @@ let package = Package(
     .target(
       name: "Models",
       dependencies: [
-        .product(name: "CoreUnitTypes", package: "swift-psychrometrics"),
+        .product(name: "Psychrometrics", package: "swift-psychrometrics"),
       ]
     ),
     .target(

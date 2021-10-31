@@ -61,6 +61,60 @@ final class ClientLiveTests: XCTestCase {
     
   }
   
+  func test_client2_returnTemperature_listener() throws {
+    let mqttClient = createMQTTClient(identifier: "return-temperature-tests")
+    let state = State()
+    let topics = Topics()
+    let client = Client2.live(client: mqttClient, state: state, topics: topics)
+    
+    client.addListeners()
+    try client.connect().wait()
+    try client.subscribe().wait()
+    
+    _ = try mqttClient.publish(
+      to: topics.sensors.returnAirSensor.temperature,
+      payload: ByteBufferAllocator().buffer(string: "75.1234"),
+      qos: .atLeastOnce
+    ).wait()
+    
+    Thread.sleep(forTimeInterval: 2)
+    
+    XCTAssertEqual(state.sensors.returnAirSensor.temperature, .celsius(75.1234))
+    
+    try client.shutdown().wait()
+  }
+  
+  func test_client2_returnSensor_publish() throws {
+    let mqttClient = createMQTTClient(identifier: "return-temperature-tests")
+    let state = State()
+    let topics = Topics()
+    let client = Client2.live(client: mqttClient, state: state, topics: topics)
+    
+    client.addListeners()
+    try client.connect().wait()
+    try client.subscribe().wait()
+    
+    _ = try mqttClient.publish(
+      to: topics.sensors.returnAirSensor.temperature,
+      payload: ByteBufferAllocator().buffer(string: "75.1234"),
+      qos: .atLeastOnce
+    ).wait()
+    
+    _ = try mqttClient.publish(
+      to: topics.sensors.returnAirSensor.humidity,
+      payload: ByteBufferAllocator().buffer(string: "\(50.0)"),
+      qos: .atLeastOnce
+    ).wait()
+    
+    Thread.sleep(forTimeInterval: 2)
+    XCTAssert(state.sensors.returnAirSensor.needsProcessed)
+    
+    try client.publishSensor(.return(state.sensors.returnAirSensor)).wait()
+    XCTAssertFalse(state.sensors.returnAirSensor.needsProcessed)
+    
+    try client.shutdown().wait()
+  }
+  
 //  func test_fetch_humidity() throws {
 //    let lock = Lock()
 //    let publishClient = createMQTTClient(identifier: "publishHumidity")

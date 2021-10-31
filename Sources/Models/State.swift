@@ -1,44 +1,59 @@
 import Foundation
-import CoreUnitTypes
+import Psychrometrics
 
-public struct State: Equatable {
+// TODO: Make this a struct, then create a Store class that holds the state??
+public final class State {
   
+  public var altitude: Length
   public var sensors: Sensors
+  public var units: PsychrometricEnvironment.Units {
+    didSet {
+      PsychrometricEnvironment.shared.units = units
+    }
+  }
   
-  public init(sensors: Sensors = .init()) {
+  public init(
+    altitude: Length = .seaLevel,
+    sensors: Sensors = .init(),
+    units: PsychrometricEnvironment.Units = .imperial
+  ) {
+    self.altitude = altitude
     self.sensors = sensors
+    self.units = units
   }
   
   public struct Sensors: Equatable {
     
-    public var mixedSensor: TemperatureHumiditySensor<Mixed>
+    public var mixedAirSensor: TemperatureHumiditySensor<Mixed>
     public var postCoilSensor: TemperatureHumiditySensor<PostCoil>
-    public var returnSensor: TemperatureHumiditySensor<Return>
-    public var supplySensor: TemperatureHumiditySensor<Supply>
+    public var returnAirSensor: TemperatureHumiditySensor<Return>
+    public var supplyAirSensor: TemperatureHumiditySensor<Supply>
     
     public init(
-      mixedSensor: TemperatureHumiditySensor<Mixed> = .init(),
+      mixedAirSensor: TemperatureHumiditySensor<Mixed> = .init(),
       postCoilSensor: TemperatureHumiditySensor<PostCoil> = .init(),
-      returnSensor: TemperatureHumiditySensor<Return> = .init(),
-      supplySensor: TemperatureHumiditySensor<Supply> = .init()
+      returnAirSensor: TemperatureHumiditySensor<Return> = .init(),
+      supplyAirSensor: TemperatureHumiditySensor<Supply> = .init()
     ) {
-      self.mixedSensor = mixedSensor
+      self.mixedAirSensor = mixedAirSensor
       self.postCoilSensor = postCoilSensor
-      self.returnSensor = returnSensor
-      self.supplySensor = supplySensor
+      self.returnAirSensor = returnAirSensor
+      self.supplyAirSensor = supplyAirSensor
     }
     
     public var needsProcessed: Bool {
-      mixedSensor.needsProcessed
+      mixedAirSensor.needsProcessed
         || postCoilSensor.needsProcessed
-        || returnSensor.needsProcessed
-        || supplySensor.needsProcessed
+        || returnAirSensor.needsProcessed
+        || supplyAirSensor.needsProcessed
     }
   }
 }
 
 extension State.Sensors {
+  
   public struct TemperatureHumiditySensor<Location>: Equatable {
+    
     @TrackedChanges
     public var temperature: Temperature?
     
@@ -46,7 +61,25 @@ extension State.Sensors {
     public var humidity: RelativeHumidity?
     
     public var needsProcessed: Bool {
-      $temperature.needsProcessed || $humidity.needsProcessed
+      get { $temperature.needsProcessed || $humidity.needsProcessed }
+      set {
+        $temperature.needsProcessed = newValue
+        $humidity.needsProcessed = newValue
+      }
+    }
+    
+    public func dewPoint(units: PsychrometricEnvironment.Units? = nil) -> DewPoint? {
+      guard let temperature = temperature,
+            let humidity = humidity
+      else { return nil }
+      return .init(dryBulb: temperature, humidity: humidity, units: units)
+    }
+    
+    public func enthalpy(altitude: Length, units: PsychrometricEnvironment.Units? = nil) -> EnthalpyOf<MoistAir>? {
+      guard let temperature = temperature,
+            let humidity = humidity
+      else { return nil }
+      return .init(dryBulb: temperature, humidity: humidity, altitude: altitude, units: units)
     }
     
     public init(
@@ -59,53 +92,9 @@ extension State.Sensors {
     }
   }
   
-  // MARK: - Temperature / Humidity Sensor Locations
+  // MARK: - Temperature / Humidity Sensor Location Namespaces
   public enum Mixed { }
   public enum PostCoil { }
   public enum Return { }
   public enum Supply { }
 }
-
-// MARK: - Tracked Changes
-@propertyWrapper
-public struct TrackedChanges<Value> {
-  
-  private var tracking: TrackingState
-  private var value: Value
-  
-  public var wrappedValue: Value {
-    get { value }
-    set {
-      // fix
-      value = newValue
-    }
-  }
-  
-  public init(wrappedValue: Value, needsProcessed: Bool = false) {
-    self.value = wrappedValue
-    self.tracking = needsProcessed ? .needsProcessed : .hasProcessed
-  }
-  
-  enum TrackingState {
-    case hasProcessed
-    case needsProcessed
-  }
-  
-  public var needsProcessed: Bool {
-    get { tracking == .needsProcessed }
-    set {
-      if newValue {
-        tracking = .needsProcessed
-      } else {
-        tracking = .hasProcessed
-      }
-    }
-  }
-  
-  public var projectedValue: Self {
-    get { self }
-    set { self = newValue }
-  }
-}
-
-extension TrackedChanges: Equatable where Value: Equatable { }
