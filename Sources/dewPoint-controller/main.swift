@@ -22,13 +22,13 @@ if environment.envVars.appEnv == .production {
   logger.logLevel = .info
 }
 
-let relay = Relay(topic: environment.topics.commands.relays.dehumidification1)
-let tempSensor = Sensor<Temperature>(topic: environment.topics.sensors.returnAirSensor.temperature)
-let humiditySensor = Sensor<RelativeHumidity>(topic: environment.topics.sensors.returnAirSensor.humidity)
+//let relay = Relay(topic: environment.topics.commands.relays.dehumidification1)
+//let tempSensor = Sensor<Temperature>(topic: environment.topics.sensors.returnAirSensor.temperature)
+//let humiditySensor = Sensor<RelativeHumidity>(topic: environment.topics.sensors.returnAirSensor.humidity)
 
 defer {
   logger.debug("Disconnecting")
-  try? environment.mqttClient.shutdown().wait()
+//  try? environment.mqttClient.shutdown().wait()
 }
 
 while true {
@@ -41,18 +41,18 @@ while true {
 //
   logger.debug("Fetching dew point...")
 
-  let dp = try environment.mqttClient.currentDewPoint(
-    temperature: tempSensor,
-    humidity: humiditySensor,
-    units: .imperial
-  ).wait()
+//  let dp = try environment.mqttClient.currentDewPoint(
+//    temperature: tempSensor,
+//    humidity: humiditySensor,
+//    units: .imperial
+//  ).wait()
 
-  logger.info("Dew Point: \(dp.rawValue) \(dp.units.symbol)")
+//  logger.info("Dew Point: \(dp.rawValue) \(dp.units.symbol)")
 
-  try environment.mqttClient.publish(
-    dewPoint: dp,
-    to: environment.topics.sensors.returnAirSensor.dewPoint
-  ).wait()
+//  try environment.mqttClient.publish(
+//    dewPoint: dp,
+//    to: environment.topics.sensors.returnAirSensor.dewPoint
+//  ).wait()
 
   logger.debug("Published dew point...")
   

@@ -14,16 +14,16 @@ final class ClientLiveTests: XCTestCase {
   static let hostname = ProcessInfo.processInfo.environment["MOSQUITTO_SERVER"] ?? "localhost"
   let topics = Topics()
   
-  func test_mqtt_subscription() throws {
-    let mqttClient = createMQTTClient(identifier: "test_subscription")
-    _ = try mqttClient.connect().wait()
-    let sub = try mqttClient.v5.subscribe(
-      to: [mqttClient.mqttSubscription(topic: "test/subscription")]
-    ).wait()
-    XCTAssertEqual(sub.reasons[0], .grantedQoS1)
-    try mqttClient.disconnect().wait()
-    try mqttClient.syncShutdownGracefully()
-  }
+//  func test_mqtt_subscription() throws {
+//    let mqttClient = createMQTTClient(identifier: "test_subscription")
+//    _ = try mqttClient.connect().wait()
+//    let sub = try mqttClient.v5.subscribe(
+//      to: [mqttClient.mqttSubscription(topic: "test/subscription")]
+//    ).wait()
+//    XCTAssertEqual(sub.reasons[0], .grantedQoS1)
+//    try mqttClient.disconnect().wait()
+//    try mqttClient.syncShutdownGracefully()
+//  }
   
   func test_mqtt_listener() throws {
     let lock = Lock()
@@ -65,7 +65,7 @@ final class ClientLiveTests: XCTestCase {
     let mqttClient = createMQTTClient(identifier: "return-temperature-tests")
     let state = State()
     let topics = Topics()
-    let client = Client2.live(client: mqttClient, state: state, topics: topics)
+    let client = Client.live(client: mqttClient, state: state, topics: topics)
     
     client.addListeners()
     try client.connect().wait()
@@ -88,7 +88,7 @@ final class ClientLiveTests: XCTestCase {
     let mqttClient = createMQTTClient(identifier: "return-temperature-tests")
     let state = State()
     let topics = Topics()
-    let client = Client2.live(client: mqttClient, state: state, topics: topics)
+    let client = Client.live(client: mqttClient, state: state, topics: topics)
     
     client.addListeners()
     try client.connect().wait()
@@ -165,12 +165,12 @@ final class ClientLiveTests: XCTestCase {
 //  }
   
   // Uses default topic names.
-  func createClient(mqttClient: MQTTNIO.MQTTClient, autoConnect: Bool = true) throws -> Client.MQTTClient {
-    if autoConnect {
-      _ = try mqttClient.connect().wait()
-    }
-    return .live(client: mqttClient, topics: .init())
-  }
+//  func createClient(mqttClient: MQTTNIO.MQTTClient, autoConnect: Bool = true) throws -> Client.MQTTClient {
+//    if autoConnect {
+//      _ = try mqttClient.connect().wait()
+//    }
+//    return .live(client: mqttClient, topics: .init())
+//  }
   
   let logger: Logger = {
       var logger = Logger(label: "MQTTTests")

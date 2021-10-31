@@ -118,11 +118,10 @@ extension EventLoopFuture where Value == (EnvVars, Topics) {
     logger: Logger?
   ) -> EventLoopFuture<DewPointEnvironment> {
       map { envVars, topics in
-        let nioClient = MQTTClient(envVars: envVars, eventLoopGroup: eventLoopGroup, logger: logger)
+        let mqttClient = MQTTClient(envVars: envVars, eventLoopGroup: eventLoopGroup, logger: logger)
         return DewPointEnvironment.init(
-          mqttClient: .live(client: nioClient, topics: topics),
           envVars: envVars,
-          nioClient: nioClient,
+          mqttClient: mqttClient,
           topics: topics
         )
       }
@@ -139,7 +138,7 @@ extension EventLoopFuture where Value == DewPointEnvironment {
     guard autoConnect else { return self }
     return flatMap { environment in
       logger?.debug("Connecting to MQTT Broker...")
-      return environment.nioClient.connect()
+      return environment.mqttClient.connect()
         .map { _ in
           logger?.debug("Successfully connected to MQTT Broker...")
           return environment
