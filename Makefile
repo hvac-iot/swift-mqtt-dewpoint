@@ -4,6 +4,8 @@ bootstrap-env:
 	
 bootstrap-topics:
 	@cp Bootstrap/topics-example .topics
+	
+bootstrap: bootstrap-env bootstrap-topics
 
 build:
 	@swift build

@@ -26,6 +26,8 @@ let package = Package(
       name: "dewPoint-controller",
       dependencies: [
         "Bootstrap",
+        "ClientLive",
+        "TopicsLive",
         .product(name: "MQTTNIO", package: "mqtt-nio"),
         .product(name: "NIO", package: "swift-nio")
       ]
@@ -85,6 +87,12 @@ let package = Package(
       dependencies: [
         "Client",
         "ClientLive"
+      ]
+    ),
+    .target(
+      name: "TopicsLive",
+      dependencies: [
+        "Models"
       ]
     ),
   ]

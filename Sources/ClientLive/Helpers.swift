@@ -10,32 +10,34 @@ protocol BufferInitalizable {
   init?(buffer: inout ByteBuffer)
 }
 
-extension Temperature: BufferInitalizable {
+extension Double: BufferInitalizable {
   
+  /// Attempt to create / parse a double from a byte buffer.
   init?(buffer: inout ByteBuffer) {
-    guard let string = buffer.readString(length: buffer.readableBytes, encoding: .utf8),
-            let value = Double(string)
-    else {
-      return nil
-    }
+    guard let string = buffer.readString(length: buffer.readableBytes, encoding: .utf8)
+    else { return nil }
+    self.init(string)
+  }
+}
+
+extension Temperature: BufferInitalizable {
+  /// Attempt to create / parse a temperature from a byte buffer.
+  init?(buffer: inout ByteBuffer) {
+    guard let value = Double(buffer: &buffer) else { return nil }
     self.init(value, units: .celsius)
   }
 }
 
 extension RelativeHumidity: BufferInitalizable {
-  
+  /// Attempt to create / parse a relative humidity from a byte buffer.
   init?(buffer: inout ByteBuffer) {
-    guard let string = buffer.readString(length: buffer.readableBytes, encoding: .utf8),
-          let value = Double(string)
-    else {
-      return nil
-    }
+    guard let value = Double(buffer: &buffer) else { return nil }
     self.init(value)
   }
 }
 
 extension MQTTNIO.MQTTClient {
-  
+  /// Logs a failure for a given topic and error.
   func logFailure(topic: String, error: Error) {
     logger.error("\(topic): \(error)")
   }
@@ -214,10 +216,11 @@ extension MQTTNIO.MQTTClient {
       logger.trace("No dew point for sensor.")
       return eventLoopGroup.next().makeSucceededFuture((self, request, state, topics))
     }
+    let roundedDewPoint = round(dewPoint.rawValue * 100) / 100
     logger.debug("Publishing dew-point: \(dewPoint), to: \(topic)")
     return publish(
       to: topic,
-      payload: ByteBufferAllocator().buffer(string: "\(dewPoint.rawValue)"),
+      payload: ByteBufferAllocator().buffer(string: "\(roundedDewPoint)"),
       qos: .atLeastOnce
     )
     .map { (self, request, state, topics) }
@@ -240,10 +243,11 @@ extension EventLoopFuture where Value == (MQTTNIO.MQTTClient, Client.SensorPubli
         client.logger.trace("No enthalpy for sensor.")
         return client.eventLoopGroup.next().makeSucceededFuture((request, state))
       }
+      let roundedEnthalpy = round(enthalpy.rawValue * 100) / 100
       client.logger.debug("Publishing enthalpy: \(enthalpy), to: \(topic)")
       return client.publish(
         to: topic,
-        payload: ByteBufferAllocator().buffer(string: "\(enthalpy.rawValue)"),
+        payload: ByteBufferAllocator().buffer(string: "\(roundedEnthalpy)"),
         qos: .atLeastOnce
       )
         .map { (request, state) }

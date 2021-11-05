@@ -9,7 +9,6 @@ import NIO
 import NIOConcurrencyHelpers
 import XCTest
 
-// Can't seem to get tests to work, although we get values when ran from command line.
 final class ClientLiveTests: XCTestCase {
   static let hostname = ProcessInfo.processInfo.environment["MOSQUITTO_SERVER"] ?? "localhost"
   let topics = Topics()

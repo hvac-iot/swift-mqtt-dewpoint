@@ -1,60 +1,73 @@
 import Bootstrap
+import ClientLive
 import CoreUnitTypes
 import Logging
 import Models
 import MQTTNIO
 import NIO
+import TopicsLive
 import Foundation
 
 var logger: Logger = {
   var logger = Logger(label: "dewPoint-logger")
-  logger.logLevel = .info
+  logger.logLevel = .debug
   return logger
 }()
 
 logger.info("Starting Swift Dew Point Controller!")
 
 let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-let environment = try bootstrap(eventLoopGroup: eventLoopGroup, logger: logger).wait()
+var environment = try bootstrap(eventLoopGroup: eventLoopGroup, logger: logger, autoConnect: false).wait()
 
 // Set the log level to info only in production mode.
 if environment.envVars.appEnv == .production {
   logger.logLevel = .info
 }
 
-//let relay = Relay(topic: environment.topics.commands.relays.dehumidification1)
-//let tempSensor = Sensor<Temperature>(topic: environment.topics.sensors.returnAirSensor.temperature)
-//let humiditySensor = Sensor<RelativeHumidity>(topic: environment.topics.sensors.returnAirSensor.humidity)
+// Set up the client, topics and state.
+environment.topics = .live
+let state = State()
+let client = Client.live(client: environment.mqttClient, state: state, topics: environment.topics)
 
 defer {
   logger.debug("Disconnecting")
-//  try? environment.mqttClient.shutdown().wait()
 }
 
+// Add topic listeners.
+client.addListeners()
+
 while true {
-//  let temp = try environment.mqttClient.fetchTemperature(tempSensor, .imperial).wait()
-//  logger.debug("Temp: \(temp.rawValue)")
+  if !environment.mqttClient.isActive() {
+    logger.trace("Connecting to MQTT broker...")
+    try client.connect().wait()
+    try client.subscribe().wait()
+    Thread.sleep(forTimeInterval: 1)
+  }
+  
+  // Check if sensors need processed.
+  if state.sensors.needsProcessed {
+    logger.debug("Sensor state has changed...")
+    if state.sensors.mixedAirSensor.needsProcessed {
+      logger.trace("Publishing mixed air sensor.")
+      try client.publishSensor(.mixed(state.sensors.mixedAirSensor)).wait()
+    }
+    if state.sensors.postCoilSensor.needsProcessed {
+      logger.trace("Publishing post coil sensor.")
+      try client.publishSensor(.postCoil(state.sensors.postCoilSensor)).wait()
+    }
+    if state.sensors.returnAirSensor.needsProcessed {
+      logger.trace("Publishing return air sensor.")
+      try client.publishSensor(.return(state.sensors.returnAirSensor)).wait()
+    }
+    if state.sensors.supplyAirSensor.needsProcessed {
+      logger.trace("Publishing supply air sensor.")
+      try client.publishSensor(.supply(state.sensors.supplyAirSensor)).wait()
+    }
+  }
+
+//  logger.debug("Fetching dew point...")
 //
-//  logger.debug("Fetching set-point...")
-//  let sp = try environment.mqttClient.fetchSetPoint(\.dehumidify.highDewPoint).wait()
-//  logger.debug("Set point: \(sp)")
-//
-  logger.debug("Fetching dew point...")
-
-//  let dp = try environment.mqttClient.currentDewPoint(
-//    temperature: tempSensor,
-//    humidity: humiditySensor,
-//    units: .imperial
-//  ).wait()
-
-//  logger.info("Dew Point: \(dp.rawValue) \(dp.units.symbol)")
-
-//  try environment.mqttClient.publish(
-//    dewPoint: dp,
-//    to: environment.topics.sensors.returnAirSensor.dewPoint
-//  ).wait()
-
-  logger.debug("Published dew point...")
+//  logger.debug("Published dew point...")
   
   Thread.sleep(forTimeInterval: 5)
 }

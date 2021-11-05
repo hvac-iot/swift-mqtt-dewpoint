@@ -70,14 +70,18 @@ extension State.Sensors {
     
     public func dewPoint(units: PsychrometricEnvironment.Units? = nil) -> DewPoint? {
       guard let temperature = temperature,
-            let humidity = humidity
+            let humidity = humidity,
+            !temperature.rawValue.isNaN,
+            !humidity.rawValue.isNaN
       else { return nil }
       return .init(dryBulb: temperature, humidity: humidity, units: units)
     }
     
     public func enthalpy(altitude: Length, units: PsychrometricEnvironment.Units? = nil) -> EnthalpyOf<MoistAir>? {
       guard let temperature = temperature,
-            let humidity = humidity
+            let humidity = humidity,
+            !temperature.rawValue.isNaN,
+            !humidity.rawValue.isNaN
       else { return nil }
       return .init(dryBulb: temperature, humidity: humidity, altitude: altitude, units: units)
     }
