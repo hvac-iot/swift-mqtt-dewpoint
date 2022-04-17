@@ -39,6 +39,7 @@ private func loadEnvVars(
   
   logger?.debug("Loading env vars...")
   
+  // TODO: Need to have the env file path passed in / dynamic.
   let envFilePath = URL(fileURLWithPath: #file)
     .deletingLastPathComponent()
     .deletingLastPathComponent()

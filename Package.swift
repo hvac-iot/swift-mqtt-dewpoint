@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
   name: "dewPoint-controller",
   platforms: [
-    .macOS(.v10_14)
+    .macOS(.v10_15)
   ],
   products: [
     .executable(name: "dewPoint-controller", targets: ["dewPoint-controller"]),
@@ -17,7 +17,7 @@ let package = Package(
     .library(name: "ClientLive", targets: ["ClientLive"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/adam-fowler/mqtt-nio.git", from: "2.0.0"),
+    .package(url: "https://github.com/swift-server-community/mqtt-nio.git", from: "2.0.0"),
     .package(url: "https://github.com/apple/swift-nio", from: "2.0.0"),
     .package(url: "https://github.com/swift-psychrometrics/swift-psychrometrics", from: "0.1.0")
   ],

@@ -3,6 +3,7 @@ import Logging
 import Models
 import MQTTNIO
 import NIO
+import NIOFoundationCompat
 import Psychrometrics
 
 /// Represents a type that can be initialized by a ``ByteBuffer``.
@@ -14,7 +15,10 @@ extension Double: BufferInitalizable {
   
   /// Attempt to create / parse a double from a byte buffer.
   init?(buffer: inout ByteBuffer) {
-    guard let string = buffer.readString(length: buffer.readableBytes, encoding: .utf8)
+    guard let string = buffer.readString(
+        length: buffer.readableBytes,
+        encoding: String.Encoding.utf8
+    )
     else { return nil }
     self.init(string)
   }

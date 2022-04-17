@@ -3,11 +3,11 @@
     "pins": [
       {
         "package": "mqtt-nio",
-        "repositoryURL": "https://github.com/adam-fowler/mqtt-nio.git",
+        "repositoryURL": "https://github.com/swift-server-community/mqtt-nio.git",
         "state": {
           "branch": null,
-          "revision": "976a4b6019e1dd365a0da793babadd5cc958ce2b",
-          "version": "2.1.1"
+          "revision": "ca8af7a30c4690456ce7de276cd0f037489ba707",
+          "version": "2.5.3"
         }
       },
       {
@@ -33,8 +33,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-ssl.git",
         "state": {
           "branch": null,
-          "revision": "5e68c1ded15619bb281b273fa8c2d8fd7f7b2b7d",
-          "version": "2.16.1"
+          "revision": "b5260a31c2a72a89fa684f5efb3054d8725a2316",
+          "version": "2.18.0"
         }
       },
       {
@@ -42,8 +42,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-transport-services.git",
         "state": {
           "branch": null,
-          "revision": "e7f5278a26442dc46783ba7e063643d524e414a0",
-          "version": "1.11.3"
+          "revision": "8ab824b140d0ebcd87e9149266ddc353e3705a3e",
+          "version": "1.11.4"
         }
       },
       {
