@@ -14,15 +14,11 @@ run:
 	@swift run dewPoint-controller
 	
 start-mosquitto:
-	@docker run \
-		--name mosquitto \
-		-d \
-		-p 1883:1883 \
-		-p 8883:8883 \
-		-p 8080:8080 \
-		-p 8081:8081 \
-		-v "$(PWD)/mosquitto/config:/mosquitto/config" \
-		eclipse-mosquitto
+	@docker compose start mosquitto
 
 stop-mosquitto:
-	@docker rm -f mosquitto || true
+	@docker compose rm -f mosquitto || true
+	
+test-docker:
+	@docker compose run -i test
+	@docker compose kill mosquitto-test

@@ -79,8 +79,10 @@ final class ClientLiveTests: XCTestCase {
     Thread.sleep(forTimeInterval: 2)
     
     XCTAssertEqual(state.sensors.returnAirSensor.temperature, .celsius(75.1234))
-    
-    try client.shutdown().wait()
+    try mqttClient.disconnect().wait()
+    try mqttClient.syncShutdownGracefully()
+
+//    try client.shutdown().wait()
   }
   
   func test_client2_returnSensor_publish() throws {
@@ -111,7 +113,10 @@ final class ClientLiveTests: XCTestCase {
     try client.publishSensor(.return(state.sensors.returnAirSensor)).wait()
     XCTAssertFalse(state.sensors.returnAirSensor.needsProcessed)
     
-    try client.shutdown().wait()
+    try mqttClient.disconnect().wait()
+    try mqttClient.syncShutdownGracefully()
+
+//    try client.shutdown().wait()
   }
   
 //  func test_fetch_humidity() throws {

@@ -1,3 +1,5 @@
+
+# Build the executable
 FROM swift as build
 WORKDIR /build
 COPY ./Package.* ./
@@ -9,5 +11,3 @@ RUN swift build --enable-test-discovery -c release -Xswiftc -g
 FROM swift
 WORKDIR /run
 COPY --from=build /build/.build/release /run
-
-

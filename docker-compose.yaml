@@ -3,26 +3,41 @@ version: "3"
 
 services:
   test:
-    #image: swift:latest
-    build:
-      context: ./
+    image: swift:latest
+    #build:
+    #context: ./
     platform: linux/amd64
     working_dir: /app
+    networks:
+      - test
     volumes:
       - .:/app
     depends_on:
-      - mosquitto
+      - mosquitto-test
     environment:
-      - MOSQUITTO_SERVER=mosquitto
-    command: "swift package clean && swift test"
+      - MOSQUITTO_SERVER=mosquitto-test
+    command: /bin/bash -xc "swift package clean && swift test"
+
+  mosquitto-test:
+    image: eclipse-mosquitto
+    networks:
+      - test
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/certs:/mosquitto/certs
 
   mosquitto:
     image: eclipse-mosquitto
     volumes:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/certs:/mosquitto/certs
-        #ports:
-        #- "1883:1883"
-        #- "8883:8883"
-        #- "8080:8080"
-        #- "8081:8081"
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+      - "8080:8080"
+      - "8081:8081"
+
+networks:
+  test:
+    driver: bridge
+    external: false
