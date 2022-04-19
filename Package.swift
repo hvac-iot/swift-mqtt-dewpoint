@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
   name: "dewPoint-controller",
   platforms: [
-    .macOS(.v10_15)
+    .macOS(.v12)
   ],
   products: [
     .executable(name: "dewPoint-controller", targets: ["dewPoint-controller"]),
@@ -79,6 +79,7 @@ let package = Package(
       name: "ClientLive",
       dependencies: [
         "Client",
+        "EnvVars",
         .product(name: "MQTTNIO", package: "mqtt-nio")
       ]
     ),
