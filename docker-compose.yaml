@@ -3,9 +3,10 @@ version: "3"
 
 services:
   test:
-    image: swift:latest
-    #build:
-    #context: ./
+    image: swift-mqtt-dewpoint:test
+    build:
+      context: .
+      dockerfile: Dockerfile.test
     platform: linux/amd64
     working_dir: /app
     networks:
@@ -16,7 +17,7 @@ services:
       - mosquitto-test
     environment:
       - MOSQUITTO_SERVER=mosquitto-test
-    command: /bin/bash -xc "swift package clean && swift test"
+    command: /bin/bash -xc "swift test"
 
   mosquitto-test:
     image: eclipse-mosquitto

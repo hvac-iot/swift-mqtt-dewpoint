@@ -63,6 +63,7 @@ let package = Package(
     .target(
       name: "Models",
       dependencies: [
+        .product(name: "NIO", package: "swift-nio"),
         .product(name: "Psychrometrics", package: "swift-psychrometrics"),
       ]
     ),
@@ -88,6 +89,20 @@ let package = Package(
       dependencies: [
         "Client",
         "ClientLive"
+      ]
+    ),
+    .target(
+      name: "ClientConnection",
+      dependencies: [
+        "EnvVars",
+        "Models",
+        .product(name: "MQTTNIO", package: "mqtt-nio"),
+      ]
+    ),
+    .testTarget(
+      name: "ClientConnectionTests",
+      dependencies: [
+        "ClientConnection"
       ]
     ),
     .target(

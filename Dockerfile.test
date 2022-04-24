@@ -1,0 +1,8 @@
+# Build the executable
+FROM swift
+WORKDIR /app
+COPY ./Package.* ./
+RUN swift package resolve
+COPY . .
+CMD ["swift", "test"]
+

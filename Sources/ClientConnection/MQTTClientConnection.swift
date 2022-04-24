@@ -1,0 +1,107 @@
+import Foundation
+import EnvVars
+import Logging
+import Models
+import MQTTNIO
+import NIO
+
+public class MQTTClientConnection {
+  
+  static func parsePort(port: String?) -> Int {
+    guard let port = port, let int = Int(port) else {
+      return 1883
+    }
+    return int
+  }
+  
+  let client: MQTTClient
+  var shuttingDown: Bool
+  var logger: Logger? { client.logger }
+  
+  public init(
+    envVars: EnvVars,
+    eventLoopGroupProvider: NIOEventLoopGroupProvider = .createNew
+  ) {
+    let configuration = MQTTClient.Configuration.init(
+      version: .v5_0,
+      userName: envVars.userName,
+      password: envVars.password
+    )
+    var logger = Logger(label: "DewPointController")
+    #if DEBUG
+    logger.logLevel = .trace
+    #else
+    logger.logLevel = .critical
+    #endif
+    self.client = .init(
+      host: envVars.host,
+      port: Self.parsePort(port: envVars.port),
+      identifier: envVars.identifier,
+      eventLoopGroupProvider: eventLoopGroupProvider,
+      logger: logger,
+      configuration: configuration
+    )
+    self.shuttingDown = false
+  }
+  
+  public func connect() async {
+    do {
+      _ = try await client.connect()
+      client.addCloseListener(named: "DewPointController") { _ in
+        guard !self.shuttingDown else { return }
+        self.logger?.info("Connection closed, reconnecting...")
+        Task { await self.connect() }
+      }
+      logger?.info("Connected to MQTT Broker")
+    } catch {
+      logger?.debug("Failed to connect.\n\(error)")
+    }
+  }
+  
+  public func shutdown() async {
+    shuttingDown = true
+    try? await client.disconnect()
+    try? await client.shutdown()
+  }
+  
+  public func publish(
+    topic: String,
+    payload: ByteBuffer,
+    retain: Bool
+  ) async {
+    do {
+      _ = try await client.publish(
+        to: topic,
+        payload: payload,
+        qos: .atLeastOnce,
+        retain: retain // fix
+      )
+      logger?.debug("Published to: \(topic)")
+    } catch {
+      logger?.trace("Failed to publish:\n\(error)")
+    }
+  }
+  
+  public func publish(topic: String, payload: BufferRepresentable, retain: Bool) async {
+    await self.publish(topic: topic, payload: payload.buffer, retain: retain)
+  }
+  
+  public func subscribe(
+    topic: String,
+    properties: MQTTProperties = .init()
+  ) async {
+    do {
+      _ = try await client.v5.subscribe(
+        to: [MQTTSubscribeInfoV5(topicFilter: topic, qos: .atLeastOnce)],
+        properties: properties
+      )
+      logger?.debug("Subscribed to: \(topic)")
+    } catch {
+      logger?.trace("Failed to subscribe:\n\(error)")
+    }
+  }
+  
+//  public func add<Payload>(listener: Listener<Payload>) async {
+//    await listener.add(to: self)
+//  }
+}

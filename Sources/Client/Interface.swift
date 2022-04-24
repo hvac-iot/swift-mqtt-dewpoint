@@ -42,3 +42,6 @@ public struct Client {
     case supply(State.Sensors.TemperatureHumiditySensor<State.Sensors.Supply>)
   }
 }
+
+public struct AsyncClient {
+}

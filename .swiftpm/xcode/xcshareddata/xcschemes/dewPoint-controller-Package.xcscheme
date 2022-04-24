@@ -146,6 +146,20 @@
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "ClientConnection"
+               BuildableName = "ClientConnection"
+               BlueprintName = "ClientConnection"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -171,6 +185,26 @@
                BlueprintIdentifier = "dewPoint-controllerTests"
                BuildableName = "dewPoint-controllerTests"
                BlueprintName = "dewPoint-controllerTests"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "DewPointEnvironmentTests"
+               BuildableName = "DewPointEnvironmentTests"
+               BlueprintName = "DewPointEnvironmentTests"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "ClientConnectionTests"
+               BuildableName = "ClientConnectionTests"
+               BlueprintName = "ClientConnectionTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>

@@ -1,8 +1,11 @@
 import Client
 import EnvVars
+import Logging
 import Models
+import NIO
 import MQTTNIO
 
+// TODO: Remove
 public struct DewPointEnvironment {
   
   public var envVars: EnvVars
@@ -19,3 +22,4 @@ public struct DewPointEnvironment {
     self.topics = topics
   }
 }
+
