@@ -8,8 +8,8 @@ import NIO
 final class ClientConnectionTests: XCTestCase {
   static let hostname = ProcessInfo.processInfo.environment["MOSQUITTO_SERVER"] ?? "localhost"
   
-  func createConnection(identifier: String) -> MQTTClientConnection {
-    let envVars = EnvVars.init(
+  func createEnvVars(identifier: String) -> EnvVars {
+    .init(
       appEnv: .testing,
       host: Self.hostname,
       port: "1883",
@@ -17,7 +17,14 @@ final class ClientConnectionTests: XCTestCase {
       userName: nil,
       password: nil
     )
-    return .init(envVars: envVars)
+  }
+  
+  func createConnection(identifier: String) -> MQTTClientConnection {
+    return .init(envVars: createEnvVars(identifier: identifier))
+  }
+  
+  func createManager(identifier: String) -> MQTTConnectionManager {
+    .init(envVars: createEnvVars(identifier: identifier))
   }
   
   func XCTRunAsyncAndBlock(_ closure: @escaping () async -> Void) {
@@ -40,26 +47,41 @@ final class ClientConnectionTests: XCTestCase {
   func testListenerStream() async {
     let expectation = XCTestExpectation(description: "testListenerStream")
     expectation.expectedFulfillmentCount = 1
+    let finishExpectation = XCTestExpectation(description: "testListenerStream.finish")
+    finishExpectation.expectedFulfillmentCount = 1
        
     let conn1 = createConnection(identifier: "testListenerStream-1")
     let conn2 = createConnection(identifier: "testListenerStream-2")
     
     let payloadString = "foo"
-    let offTopic = "test/testListenerStream/offTopic"
-    let topic = "test/testListenerStream"
+    let offTopicString = "test/testListenerStream/offTopic"
+    let topicString = "test/testListenerStream"
     
-    struct TestListener: MQTTTopicListener {
+    struct TestListenerTopic: MQTTTopicListener, MQTTTopicSubscriber, MQTTTopicPublisher {
+      
       var topic: String
+      
+      var subscriberInfo: MQTTClientConnection.SubscriberInfo {
+        .init(topic: topic, properties: .init(), qos: .atLeastOnce)
+      }
+      
+      var publisherInfo: MQTTClientConnection.PublisherInfo {
+        .init(topic: topic, qos: .atLeastOnce, retain: false)
+      }
     }
+    
+    let offTopic = MQTTClientConnection.PublisherInfo(topic: offTopicString)
     
     self.XCTRunAsyncAndBlock {
       await conn1.connect()
       await conn2.connect()
       
-      await conn2.subscribe(topic: topic)
+      let onTopic = TestListenerTopic(topic: topicString)
+      
+      await onTopic.subscribe(connection: conn2)
      
       let task = Task {
-        let stream = TestListener(topic: topic)
+        let stream = onTopic
           .topicStream(connection: conn2)
           .map { String.init(buffer: $0.payload) }
         
@@ -67,21 +89,72 @@ final class ClientConnectionTests: XCTestCase {
           XCTAssertEqual(string, payloadString)
           expectation.fulfill()
         }
+        finishExpectation.fulfill()
       }
      
       // ensure the stream is filtered by the topic, so we should not recieve the off topic.
-      _ = await conn1.publish(topic: offTopic, payload: payloadString, retain: false)
-      _ = await conn1.publish(topic: topic, payload: payloadString, retain: false)
+      _ = await offTopic.publish(payload: payloadString, on: conn1)
+      _ = await onTopic.publish(payload: payloadString, on: conn1)
       // ensure the stream is filtered by the topic, so we should not recieve the off topic.
-      _ = await conn1.publish(topic: offTopic, payload: payloadString, retain: false)
+      _ = await offTopic.publish(payload: payloadString, on: conn1)
        
       await conn1.shutdown()
       
       self.wait(for: [expectation], timeout: 5)
       
       await conn2.shutdown()
-     
+      
+      self.wait(for: [finishExpectation], timeout: 5)
+      
       _ = await task.value
+    }
+  }
+  
+  func testConnectionManager() async {
+    let expectation = XCTestExpectation(description: "testConnectionManager")
+    expectation.expectedFulfillmentCount = 1
+    
+    let topicString = "test/connectionManager"
+    let outboundTopicString = "test/connectionManager/publisher"
+    let payloadString = "73.1"
+    
+    let manager = createManager(identifier: "testConnectionManager.publisher")
+    let manager2 = createManager(identifier: "testConnectionManager.listener")
+    
+    let onTopic = TestTopic(topic: topicString)
+    let outboundTopic = TestTopic(topic: outboundTopicString)
+    
+    manager.registerSubscribers(onTopic)
+    manager.registerPublishers(outboundTopic)
+    manager.registerListeners(
+      MQTTConnectionManager.Listener(topic: topicString, handler: { (manager, payload) in
+        await manager.publish(payload.payload, to: outboundTopicString)
+      })
+    )
+    
+    manager2.registerSubscribers(outboundTopic)
+    manager2.registerListeners(
+      MQTTConnectionManager.Listener(topic: outboundTopicString, handler: { (_, payload) in
+        let string = String(buffer: payload.payload)
+        XCTAssertEqual(string, payloadString)
+        expectation.fulfill()
+      })
+    )
+    
+    let conn = createConnection(identifier: "testConnectionManager.connection")
+    
+    self.XCTRunAsyncAndBlock {
+      await manager.start()
+      await manager2.start()
+      
+      await conn.connect()
+      _ = try! await conn.client.publish(to: topicString, payload: payloadString.buffer, qos: .atLeastOnce)
+      await conn.shutdown()
+      
+      self.wait(for: [expectation], timeout: 5)
+      
+      await manager.stop()
+      await manager2.stop()
     }
   }
 }
@@ -92,3 +165,16 @@ extension String: BufferRepresentable {
 }
 
 extension String: BufferInitalizable { }
+
+struct TestTopic: MQTTTopicSubscriber, MQTTTopicPublisher, MQTTTopicListener {
+  
+  let topic: String
+  
+  var subscriberInfo: MQTTClientConnection.SubscriberInfo {
+    .init(topic: topic, properties: .init(), qos: .atLeastOnce)
+  }
+  
+  var publisherInfo: MQTTClientConnection.PublisherInfo {
+    .init(topic: topic, qos: .atLeastOnce, retain: false)
+  }
+}

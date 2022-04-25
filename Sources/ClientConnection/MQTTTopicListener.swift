@@ -10,6 +10,10 @@ extension MQTTTopicListener {
   public func topicStream(connection: MQTTClientConnection) -> MQTTTopicStream {
     MQTTTopicStream(connection: connection, topic: topic)
   }
+  
+//  public func topicStream(manager: MQTTConnectionManager) -> MQTTTopicStream {
+//    MQTTTopicStream(connection: manager.connection, topic: topic)
+//  }
 }
 
 public class MQTTTopicStream: AsyncSequence {

@@ -44,6 +44,10 @@ public class MQTTClientConnection {
     self.shuttingDown = false
   }
   
+  deinit {
+    Task { await shutdown() }
+  }
+  
   public func connect() async {
     do {
       _ = try await client.connect()
@@ -63,45 +67,4 @@ public class MQTTClientConnection {
     try? await client.disconnect()
     try? await client.shutdown()
   }
-  
-  public func publish(
-    topic: String,
-    payload: ByteBuffer,
-    retain: Bool
-  ) async {
-    do {
-      _ = try await client.publish(
-        to: topic,
-        payload: payload,
-        qos: .atLeastOnce,
-        retain: retain // fix
-      )
-      logger?.debug("Published to: \(topic)")
-    } catch {
-      logger?.trace("Failed to publish:\n\(error)")
-    }
-  }
-  
-  public func publish(topic: String, payload: BufferRepresentable, retain: Bool) async {
-    await self.publish(topic: topic, payload: payload.buffer, retain: retain)
-  }
-  
-  public func subscribe(
-    topic: String,
-    properties: MQTTProperties = .init()
-  ) async {
-    do {
-      _ = try await client.v5.subscribe(
-        to: [MQTTSubscribeInfoV5(topicFilter: topic, qos: .atLeastOnce)],
-        properties: properties
-      )
-      logger?.debug("Subscribed to: \(topic)")
-    } catch {
-      logger?.trace("Failed to subscribe:\n\(error)")
-    }
-  }
-  
-//  public func add<Payload>(listener: Listener<Payload>) async {
-//    await listener.add(to: self)
-//  }
 }
