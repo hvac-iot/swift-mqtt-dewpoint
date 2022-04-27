@@ -1,6 +1,8 @@
 import Foundation
 import MQTTNIO
 
+// The listener may need adapted to hold a handler that can be ran on the
+// topic stream.
 public protocol MQTTTopicListener {
   var topic: String { get }
 }
@@ -10,10 +12,6 @@ extension MQTTTopicListener {
   public func topicStream(connection: MQTTClientConnection) -> MQTTTopicStream {
     MQTTTopicStream(connection: connection, topic: topic)
   }
-  
-//  public func topicStream(manager: MQTTConnectionManager) -> MQTTTopicStream {
-//    MQTTTopicStream(connection: manager.connection, topic: topic)
-//  }
 }
 
 public class MQTTTopicStream: AsyncSequence {
@@ -35,7 +33,7 @@ public class MQTTTopicStream: AsyncSequence {
         switch result {
         case let .success(payload):
           guard payload.topicName == topic else { break }
-          connection.logger?.trace("Recieved payload for topic:\(payload.topicName)")
+          connection.logger?.trace("Recieved payload for topic: \(payload.topicName)")
           continuation.yield(payload)
         case let .failure(error):
           connection.logger?.trace("Failed:\n\(error)")

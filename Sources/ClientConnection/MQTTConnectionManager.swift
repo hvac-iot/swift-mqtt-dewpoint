@@ -59,16 +59,14 @@ public class MQTTConnectionManager {
   }
  
   func listen() {
-//    let task = Task {
     Task {
       for listener in listeners {
         connection.logger?.trace("Starting listener.")
-        Task.detached {
+        Task {
           await listener.run(on: self)
         }
       }
     }
-//    _ = await task.value
   }
   
   public func start() async {
@@ -87,6 +85,9 @@ public class MQTTConnectionManager {
   public func publish(_ payload: ByteBuffer, to topic: String) async {
     guard let publisher = publishers.first(where: { $0.publisherInfo.topic == topic }) else {
       connection.logger?.trace("No publisher registered for topic: \(topic)")
+      connection.logger?.trace("Using fallback publisher...")
+      let fallbackPublisher = MQTTClientConnection.PublisherInfo(topic: topic)
+      await fallbackPublisher.publish(payload: payload, on: connection)
       return
     }
     await publisher.publish(payload: payload, on: connection)

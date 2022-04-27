@@ -18,6 +18,13 @@ extension MQTTTopicSubscriber {
       connection.logger?.trace("Failed to subscribe:\n\(error)")
     }
   }
+  
+  public func trySubscribe(connection: MQTTClientConnection) async throws {
+    _ = try await connection.client.v5.subscribe(
+      to: [subscriberInfo.mqttSubscriberInfo],
+      properties: subscriberInfo.properties
+    )
+  }
 }
 
 

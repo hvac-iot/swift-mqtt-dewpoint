@@ -49,6 +49,9 @@ public class MQTTClientConnection {
   }
   
   public func connect() async {
+    
+    guard !client.isActive() else { return }
+    
     do {
       _ = try await client.connect()
       client.addCloseListener(named: "DewPointController") { _ in

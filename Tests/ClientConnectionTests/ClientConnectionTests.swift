@@ -3,6 +3,7 @@ import EnvVars
 import Models
 import MQTTNIO
 import NIO
+import Psychrometrics
 @testable import ClientConnection
 
 final class ClientConnectionTests: XCTestCase {
@@ -157,6 +158,48 @@ final class ClientConnectionTests: XCTestCase {
       await manager2.stop()
     }
   }
+  
+  func testApplication() async {
+    let expectation = XCTestExpectation(description: "testApplication")
+    expectation.expectedFulfillmentCount = 1
+    
+    let app = Application(createEnvVars(identifier: "testApplication"))
+    
+//    var storage: String? = nil
+    let topicString = "test/testApplication/1"
+    let topicTwo = "test/testApplication/2"
+    let payloadString = "foo"
+    
+    app.middleware.use(TopicFilterMiddleware(topicString))
+    
+    app.listeners.use(DefaultListener.init(topic: topicString, handler: { stream in
+      for await payload in stream {
+        let string = String(buffer: payload.payload)
+        XCTAssertEqual(string, payloadString)
+        expectation.fulfill()
+      }
+    }))
+    app.listeners.use(DefaultListener.init(topic: topicTwo, handler: { stream in
+      XCTFail("Should not recieve values on topic two.")
+    }))
+    
+    app.publishers.use(TestTopic(topic: topicString))
+    
+//    let conn = createConnection(identifier: "testApplication.connection")
+    
+    self.XCTRunAsyncAndBlock {
+      try! await app.start()
+      
+      await app.publish(payloadString, to: topicString)
+//      await conn.connect()
+//      _ = try! await conn.client.publish(to: topicString, payload: payloadString.buffer, qos: .atLeastOnce)
+//      await conn.shutdown()
+      
+      self.wait(for: [expectation], timeout: 5)
+      
+      await app.shutdown()
+    }
+  }
 }
 
 extension String: BufferRepresentable {
@@ -177,4 +220,11 @@ struct TestTopic: MQTTTopicSubscriber, MQTTTopicPublisher, MQTTTopicListener {
   var publisherInfo: MQTTClientConnection.PublisherInfo {
     .init(topic: topic, qos: .atLeastOnce, retain: false)
   }
+}
+
+struct  TemperatureHumiditySensor {
+  var temperature: Temperature?
+  var humidity: RelativeHumidity?
+  var topic: String
+  
 }
