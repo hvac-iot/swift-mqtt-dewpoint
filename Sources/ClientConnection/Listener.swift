@@ -5,7 +5,7 @@ public protocol Listener {
   var topic: String { get }
   var subscriptionInfo: MQTTSubscribeInfoV5 { get }
   var properties: MQTTProperties { get }
-  var handler: (MQTTTopicStream) async -> () { get }
+  var responder: Responder { get }
 }
 
 extension Listener {
@@ -16,13 +16,27 @@ extension Listener {
   
   public var properties: MQTTProperties { .init() }
   
-  public func initialize(on connection: MQTTClientConnection) async throws {
-    _ = try await connection.client.v5.subscribe(
+  internal func initialize(
+    on application: Application
+  ) async throws {
+    
+    application.logger.trace("Registering listener for topic: \(topic).")
+    
+    _ = try await application.client.v5.subscribe(
       to: [subscriptionInfo],
       properties: properties
     )
-    await handler(.init(connection: connection, topic: topic))
+    
+    application.logger.trace("Sucessfully subscribed to topic: \(topic)")
+    
+    Task {
+      let stream = RequestStream(application: application, topic: topic)
+      for await request in stream {
+        _ = try await application.responder.respond(to: request)
+      }
+    }
   }
+  
 }
 
 extension Application {
@@ -59,10 +73,10 @@ extension Application {
       storage
     }
     
-    public func initialize(on connection: MQTTClientConnection) async throws {
+    internal func initialize(on application: Application) async throws {
       Task {
         for listener in storage {
-          try await listener.initialize(on: connection)
+          try await listener.initialize(on: application)
         }
       }
     }
@@ -70,29 +84,43 @@ extension Application {
 }
 
 
-public class DefaultListener: Listener {
-  public var handler: (MQTTTopicStream) async -> ()
+public class BasicListener: Listener {
+  
   public let topic: String
   public let subscriptionInfo: MQTTSubscribeInfoV5
-  public var middlewares: Application.Middlewares
+  public let responder: Responder
   
   public init(
     topic: String,
     subscriptionInfo: MQTTSubscribeInfoV5? = nil,
-    middlewares: [Middleware] = [],
-    handler: @escaping (MQTTTopicStream) async -> ()
+    middleware: [Middleware] = [],
+    responder: Responder
   ) {
     self.topic = topic
     self.subscriptionInfo = subscriptionInfo ?? .init(topicFilter: topic, qos: .atLeastOnce)
-    self.middlewares = .init(middlewares)
-    self.handler = handler
+    self.responder = middleware.makeResponder(chainingTo: responder)
+  }
+  
+  public convenience init(
+    topic: String,
+    subscriptionInfo: MQTTSubscribeInfoV5? = nil,
+    middleware: [Middleware] = [],
+    responder: @escaping (Request) async throws -> Response
+  ) {
+    self.init(
+      topic: topic,
+      subscriptionInfo: subscriptionInfo,
+      middleware: middleware,
+      responder: ListenerResponder(closure: responder)
+    )
   }
 }
 
-//func listener() {
-//  DefaultListener(
-//    topic: "foo",
-//    subscriptionInfo: .init(topicFilter: "foo", qos: .atLeastOnce),
-//    middlewares: .init()
-//  )
-//}
+fileprivate struct ListenerResponder: Responder {
+
+  let closure: (Request) async throws -> Response
+
+  func respond(to request: Request) async throws -> Response {
+    try await closure(request)
+  }
+}

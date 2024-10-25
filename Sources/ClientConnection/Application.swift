@@ -14,17 +14,22 @@ public final class Application {
   public var logger: Logger
   public var storage: Storage
   
+  public var client: MQTTClient { connection.client }
+  
   public init(
     _ environment: EnvVars = .init(),
     _ eventLoopGroupProvider: NIOEventLoopGroupProvider = .createNew
   ) {
     self.environment = environment
     self.eventLoopGroupProvider = eventLoopGroupProvider
-    self.logger = .init(label: "mqttClient.application")
+    self.logger = Logger(label: "mqttClient.application")
+    self.logger.logLevel = logLevel
     self.connection = .init(envVars: self.environment, eventLoopGroupProvider: self.eventLoopGroupProvider)
     self.storage = Storage()
     self.didShutdown = false
     self.isBooted = false
+    self.responder.initialize()
+    self.responder.use(.default)
   }
   
   public func start() async throws {
@@ -32,7 +37,7 @@ public final class Application {
     await connection.connect()
     // add subscribers and listeners here.
     try await subscribers.initialize(on: connection)
-    try await listeners.initialize(on: connection)
+    try await listeners.initialize(on: self)
   }
   
   public func shutdown() async {
@@ -58,3 +63,10 @@ public final class Application {
   }
 }
 
+fileprivate let logLevel: Logger.Level = {
+  #if DEBUG
+  return .trace
+  #else
+  return .info
+  #endif
+}()

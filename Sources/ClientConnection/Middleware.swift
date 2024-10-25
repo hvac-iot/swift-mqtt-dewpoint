@@ -23,7 +23,7 @@ extension Application {
               \(error)
               """
             self.logger.warning("\(message)")
-            return .init(status: .failed, message: message)
+            return .failed(message)
           }
         ])
         storage[MiddlewaresKey.self] = new
@@ -60,7 +60,7 @@ extension Application {
   }
 }
 
-extension Array where Element: Middleware {
+extension Array where Element == Middleware {
   
   public func makeResponder(chainingTo responder: Responder) -> Responder {
     var responder = responder
@@ -79,10 +79,10 @@ extension Middleware {
 }
 
 private struct DefaultResponder: Responder {
-  
+
   let middleware: Middleware
   let responder: Responder
-  
+
   func respond(to request: Request) async throws -> Response {
     try await self.middleware.respond(to: request, chainingTo: responder)
   }
@@ -133,7 +133,7 @@ public struct TopicFilterMiddleware: Middleware {
       requested topic: \(request.topic)
       should match: \(topic)
       """
-      return .init(status: .failed, message: message)
+      return .failed(message)
     }
     return try await next.respond(to: request)
   }
