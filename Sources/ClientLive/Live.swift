@@ -7,7 +7,7 @@ import NIO
 import Psychrometrics
 
 extension Client {
-  
+
   // The state passed in here needs to be a class or we get escaping errors in the `addListeners` method.
   public static func live(
     client: MQTTNIO.MQTTClient,
@@ -45,12 +45,13 @@ import NIOTransportServices
 import EnvVars
 
 public class AsyncClient {
-  public static let eventLoopGroup = NIOTSEventLoopGroup()
+  //public static let eventLoopGroup = NIOTSEventLoopGroup()
+  public static let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
   public let client: MQTTClient
   public private(set) var shuttingDown: Bool
-  
+
   var logger: Logger { client.logger }
-  
+
   public init(envVars: EnvVars, logger: Logger) {
     let config = MQTTClient.Configuration.init(
       version: .v3_1_1,
@@ -70,7 +71,7 @@ public class AsyncClient {
     )
     self.shuttingDown = false
   }
-  
+
   public func connect() async {
     do {
       try await self.client.connect()
@@ -87,17 +88,17 @@ public class AsyncClient {
       logger.trace("Connection Failed.\n\(error)")
     }
   }
-  
+
   public func shutdown() async {
     self.shuttingDown = true
     try? await self.client.disconnect()
     try? await self.client.shutdown()
   }
-  
+
   func addSensorListeners() async {
-    
+
   }
-  
+
   // Need to save the recieved values somewhere.
   func addPublishListener<T>(
     topic: String,
@@ -121,8 +122,8 @@ public class AsyncClient {
       }
     }
   }
-  
-  
+
+
   private func publish(string: String, to topic: String) async throws {
     try await self.client.publish(
       to: topic,
@@ -130,26 +131,26 @@ public class AsyncClient {
       qos: .atLeastOnce
     )
   }
-  
+
   private func publish(double: Double, to topic: String) async throws {
     let rounded = round(double * 100) / 100
     try await publish(string: "\(rounded)", to: topic)
   }
-  
+
   func publishDewPoint(_ request: Client.SensorPublishRequest) async throws {
     // fix
     guard let (dewPoint, topic) = request.dewPointData(topics: .init(), units: nil) else { return }
     try await self.publish(double: dewPoint.rawValue, to: topic)
     logger.debug("Published dewpoint: \(dewPoint.rawValue), to: \(topic)")
   }
-  
+
   func publishEnthalpy(_ request: Client.SensorPublishRequest) async throws {
     // fix
     guard let (enthalpy, topic) = request.enthalpyData(altitude: .seaLevel, topics: .init(), units: nil) else { return }
     try await self.publish(double: enthalpy.rawValue, to: topic)
     logger.debug("Publihsed enthalpy: \(enthalpy.rawValue), to: \(topic)")
   }
-  
+
   public func publishSensor(_ request: Client.SensorPublishRequest) async throws {
     try await publishDewPoint(request)
     try await publishEnthalpy(request)

@@ -1,6 +1,4 @@
 # run this with docker-compose -f docker/docker-compose.yml run test
-version: "3"
-
 services:
   test:
     image: swift:latest
