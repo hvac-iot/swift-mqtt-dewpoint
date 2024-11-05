@@ -2,8 +2,8 @@
 services:
   server:
     image: swift-mqtt-dewpoint:latest
+    restart: unless-stopped
     env_file: .env
-    command: /bin/bash -xc "./dewPoint-controller"
 
   test:
     image: swift:latest

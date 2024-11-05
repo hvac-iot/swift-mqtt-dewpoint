@@ -8,6 +8,7 @@ COPY . .
 RUN swift build --enable-test-discovery -c release -Xswiftc -g
 
 # Run image
-FROM swift:5.10
+FROM swift:5.10-slim
 WORKDIR /run
-COPY --from=build /build/.build/release /run
+COPY --from=build /build/.build/release/dewPoint-controller /run
+CMD ["/bin/bash", "-xc", "./dewPoint-controller"]
