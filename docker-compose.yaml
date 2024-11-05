@@ -1,5 +1,10 @@
 # run this with docker-compose -f docker/docker-compose.yml run test
 services:
+  server:
+    image: swift-mqtt-dewpoint:latest
+    env_file: .env
+    command: /bin/bash -xc "./dewPoint-controller"
+
   test:
     image: swift:latest
     #build:
@@ -39,3 +44,4 @@ networks:
   test:
     driver: bridge
     external: false
+

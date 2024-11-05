@@ -12,7 +12,7 @@ protocol BufferInitalizable {
 }
 
 extension Double: BufferInitalizable {
-  
+
   /// Attempt to create / parse a double from a byte buffer.
   init?(buffer: inout ByteBuffer) {
     guard let string = buffer.readString(
@@ -61,7 +61,7 @@ extension Result where Success == MQTTPublishInfo {
 }
 
 extension Optional where Wrapped == ByteBuffer {
-  
+
   func parse<T>(as type: T.Type) -> T? where T: BufferInitalizable {
     switch self {
     case var .some(buffer):
@@ -73,14 +73,14 @@ extension Optional where Wrapped == ByteBuffer {
 }
 
 fileprivate struct TemperatureAndHumiditySensorKeyPathEnvelope {
-  
+
   let humidityTopic: KeyPath<Topics.Sensors, String>
   let temperatureTopic: KeyPath<Topics.Sensors, String>
   let temperatureState: WritableKeyPath<State.Sensors, Temperature?>
   let humidityState: WritableKeyPath<State.Sensors, RelativeHumidity?>
-  
+
   func addListener(to client: MQTTNIO.MQTTClient, topics: Topics, state: State) {
-    
+
     let temperatureTopic = topics.sensors[keyPath: temperatureTopic]
     client.logger.trace("Adding listener for topic: \(temperatureTopic)")
     client.addPublishListener(named: temperatureTopic) { result in
@@ -90,7 +90,7 @@ fileprivate struct TemperatureAndHumiditySensorKeyPathEnvelope {
           state.sensors[keyPath: temperatureState] = temperature
         }
     }
-    
+
     let humidityTopic = topics.sensors[keyPath: humidityTopic]
     client.logger.trace("Adding listener for topic: \(humidityTopic)")
     client.addPublishListener(named: humidityTopic) { result in
@@ -159,7 +159,7 @@ extension State {
 }
 
 extension Client.SensorPublishRequest {
-  
+
   func dewPointData(topics: Topics, units: PsychrometricEnvironment.Units?) -> (DewPoint, String)? {
     switch self {
     case let .mixed(sensor):
@@ -176,7 +176,7 @@ extension Client.SensorPublishRequest {
       return (dp, topics.sensors.supplyAirSensor.dewPoint)
     }
   }
-  
+
   func enthalpyData(altitude: Length, topics: Topics, units: PsychrometricEnvironment.Units?) -> (EnthalpyOf<MoistAir>, String)? {
     switch self {
     case let .mixed(sensor):
@@ -193,7 +193,7 @@ extension Client.SensorPublishRequest {
       return (enthalpy, topics.sensors.supplyAirSensor.enthalpy)
     }
   }
-  
+
   func setHasProcessed(state: State) {
     switch self {
     case .mixed:
@@ -209,7 +209,7 @@ extension Client.SensorPublishRequest {
 }
 
 extension MQTTNIO.MQTTClient {
-  
+
   func publishDewPoint(
     request: Client.SensorPublishRequest,
     state: State,
@@ -225,7 +225,8 @@ extension MQTTNIO.MQTTClient {
     return publish(
       to: topic,
       payload: ByteBufferAllocator().buffer(string: "\(roundedDewPoint)"),
-      qos: .atLeastOnce
+      qos: .atLeastOnce,
+      retain: true
     )
     .map { (self, request, state, topics) }
   }
