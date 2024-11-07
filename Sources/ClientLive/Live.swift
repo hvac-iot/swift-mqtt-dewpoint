@@ -61,7 +61,7 @@ public class AsyncClient {
       tlsConfiguration: nil,
       webSocketURLPath: nil
     )
-    self.client = .init(
+    self.client = MQTTClient(
       host: envVars.host,
       identifier: envVars.identifier,
       eventLoopGroupProvider: .shared(Self.eventLoopGroup),

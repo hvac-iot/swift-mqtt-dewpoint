@@ -3,7 +3,7 @@ import Psychrometrics
 
 // TODO: Make this a struct, then create a Store class that holds the state??
 public final class State {
-  
+
   public var altitude: Length
   public var sensors: Sensors
   public var units: PsychrometricEnvironment.Units {
@@ -11,7 +11,7 @@ public final class State {
       PsychrometricEnvironment.shared.units = units
     }
   }
-  
+
   public init(
     altitude: Length = .seaLevel,
     sensors: Sensors = .init(),
@@ -21,16 +21,16 @@ public final class State {
     self.sensors = sensors
     self.units = units
   }
-  
+
   public struct Sensors: Equatable {
-    
-    public var mixedAirSensor: TemperatureHumiditySensor<Mixed>
+
+    public var mixedAirSensor: TemperatureHumiditySensor<MixedAir>
     public var postCoilSensor: TemperatureHumiditySensor<PostCoil>
     public var returnAirSensor: TemperatureHumiditySensor<Return>
     public var supplyAirSensor: TemperatureHumiditySensor<Supply>
-    
+
     public init(
-      mixedAirSensor: TemperatureHumiditySensor<Mixed> = .init(),
+      mixedAirSensor: TemperatureHumiditySensor<MixedAir> = .init(),
       postCoilSensor: TemperatureHumiditySensor<PostCoil> = .init(),
       returnAirSensor: TemperatureHumiditySensor<Return> = .init(),
       supplyAirSensor: TemperatureHumiditySensor<Supply> = .init()
@@ -40,7 +40,7 @@ public final class State {
       self.returnAirSensor = returnAirSensor
       self.supplyAirSensor = supplyAirSensor
     }
-    
+
     public var needsProcessed: Bool {
       mixedAirSensor.needsProcessed
         || postCoilSensor.needsProcessed
@@ -51,15 +51,15 @@ public final class State {
 }
 
 extension State.Sensors {
-  
+
   public struct TemperatureHumiditySensor<Location>: Equatable {
-    
+
     @TrackedChanges
     public var temperature: Temperature?
-    
+
     @TrackedChanges
     public var humidity: RelativeHumidity?
-    
+
     public var needsProcessed: Bool {
       get { $temperature.needsProcessed || $humidity.needsProcessed }
       set {
@@ -67,7 +67,7 @@ extension State.Sensors {
         $humidity.needsProcessed = newValue
       }
     }
-    
+
     public func dewPoint(units: PsychrometricEnvironment.Units? = nil) -> DewPoint? {
       guard let temperature = temperature,
             let humidity = humidity,
@@ -76,7 +76,7 @@ extension State.Sensors {
       else { return nil }
       return .init(dryBulb: temperature, humidity: humidity, units: units)
     }
-    
+
     public func enthalpy(altitude: Length, units: PsychrometricEnvironment.Units? = nil) -> EnthalpyOf<MoistAir>? {
       guard let temperature = temperature,
             let humidity = humidity,
@@ -85,7 +85,7 @@ extension State.Sensors {
       else { return nil }
       return .init(dryBulb: temperature, humidity: humidity, altitude: altitude, units: units)
     }
-    
+
     public init(
       temperature: Temperature? = nil,
       humidity: RelativeHumidity? = nil,
@@ -95,9 +95,9 @@ extension State.Sensors {
       self._humidity = .init(wrappedValue: humidity, needsProcessed: needsProcessed)
     }
   }
-  
+
   // MARK: - Temperature / Humidity Sensor Location Namespaces
-  public enum Mixed { }
+  public enum MixedAir { }
   public enum PostCoil { }
   public enum Return { }
   public enum Supply { }

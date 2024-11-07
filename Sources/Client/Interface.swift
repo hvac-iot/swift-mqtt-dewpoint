@@ -6,21 +6,21 @@ import NIO
 import Psychrometrics
 
 public struct Client {
-  
+
   /// Add the publish listeners to the MQTT Broker, to be notified of published changes.
   public var addListeners: () -> Void
-  
+
   /// Connect to the MQTT Broker.
   public var connect: () -> EventLoopFuture<Void>
-  
+
   public var publishSensor: (SensorPublishRequest) -> EventLoopFuture<Void>
-  
+
   /// Subscribe to appropriate topics / events.
   public var subscribe: () -> EventLoopFuture<Void>
-  
+
   /// Disconnect and close the connection to the MQTT Broker.
   public var shutdown: () -> EventLoopFuture<Void>
-  
+
   public init(
     addListeners: @escaping () -> Void,
     connect: @escaping () -> EventLoopFuture<Void>,
@@ -34,9 +34,9 @@ public struct Client {
     self.shutdown = shutdown
     self.subscribe = subscribe
   }
-  
+
   public enum SensorPublishRequest {
-    case mixed(State.Sensors.TemperatureHumiditySensor<State.Sensors.Mixed>)
+    case mixed(State.Sensors.TemperatureHumiditySensor<State.Sensors.MixedAir>)
     case postCoil(State.Sensors.TemperatureHumiditySensor<State.Sensors.PostCoil>)
     case `return`(State.Sensors.TemperatureHumiditySensor<State.Sensors.Return>)
     case supply(State.Sensors.TemperatureHumiditySensor<State.Sensors.Supply>)
