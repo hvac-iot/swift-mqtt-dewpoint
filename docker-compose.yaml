@@ -1,4 +1,4 @@
-# run this with docker-compose -f docker/docker-compose.yml run test
+# run this with docker-compose run test
 services:
   server:
     image: swift-mqtt-dewpoint:latest
@@ -6,7 +6,7 @@ services:
     env_file: .env
 
   test:
-    image: swift:latest
+    image: swift:5.10
     #build:
     #context: ./
     platform: linux/amd64

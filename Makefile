@@ -10,6 +10,9 @@ bootstrap: bootstrap-env bootstrap-topics
 build:
 	@swift build
 
+clean:
+	rm -rf .build
+
 run:
 	@swift run dewPoint-controller
 
@@ -22,3 +25,4 @@ stop-mosquitto:
 test-docker:
 	@docker-compose run -i test
 	@docker-compose kill mosquitto-test
+	@docker-compose rm -f

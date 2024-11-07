@@ -9,3 +9,4 @@ DerivedData/
 .topics
 mqtt_password.txt
 .env
+.smbdelete*

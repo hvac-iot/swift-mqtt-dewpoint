@@ -21,6 +21,7 @@ var environment = try bootstrap(eventLoopGroup: eventLoopGroup, logger: logger, 
 
 // Set the log level to info only in production mode.
 if environment.envVars.appEnv == .production {
+  logger.debug("Updating logging level to info.")
   logger.logLevel = .info
 }
 
@@ -43,7 +44,7 @@ while true {
     try client.subscribe().wait()
     Thread.sleep(forTimeInterval: 1)
   }
-  
+
   // Check if sensors need processed.
   if state.sensors.needsProcessed {
     logger.debug("Sensor state has changed...")
@@ -68,6 +69,6 @@ while true {
 //  logger.debug("Fetching dew point...")
 //
 //  logger.debug("Published dew point...")
-  
+
   Thread.sleep(forTimeInterval: 5)
 }

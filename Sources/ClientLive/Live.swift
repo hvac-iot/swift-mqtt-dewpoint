@@ -41,11 +41,10 @@ extension Client {
 }
 
 import Logging
-import NIOTransportServices
 import EnvVars
 
 public class AsyncClient {
-  //public static let eventLoopGroup = NIOTSEventLoopGroup()
+
   public static let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
   public let client: MQTTClient
   public private(set) var shuttingDown: Bool
