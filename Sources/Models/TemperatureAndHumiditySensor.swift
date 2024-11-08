@@ -3,7 +3,7 @@ import Psychrometrics
 /// Represents a temperature and humidity sensor that can be used to derive
 /// the dew-point temperature and enthalpy values.
 ///
-public struct TemperatureAndHumiditySensor: Equatable, Identifiable {
+public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable {
 
   /// The identifier of the sensor, same as the location.
   public var id: Location { location }
@@ -93,7 +93,7 @@ public struct TemperatureAndHumiditySensor: Equatable, Identifiable {
   }
 
   /// Represents the MQTT topics to listen for updated sensor values on.
-  public struct Topics: Equatable {
+  public struct Topics: Equatable, Hashable {
 
     /// The temperature topic of the sensor.
     public let temperature: String
@@ -111,7 +111,7 @@ public struct TemperatureAndHumiditySensor: Equatable, Identifiable {
 
     init(location: TemperatureAndHumiditySensor.Location) {
       self.temperature = "sensors/\(location.rawValue)/temperature"
-      self.humidity = "sensors/\(location.rawValue)/temperature"
+      self.humidity = "sensors/\(location.rawValue)/humidity"
     }
   }
 }

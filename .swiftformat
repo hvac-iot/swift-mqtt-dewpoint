@@ -2,7 +2,8 @@
 --indent 2
 --ifdef indent
 --trimwhitespace always
---wraparguments preserve
+--wraparguments before-first
+--wrapparameters before-first
 --wrapcollections preserve
 --wrapconditions after-first
 --typeblanklines preserve

@@ -88,3 +88,11 @@ extension TrackedChanges: Equatable where Value: Equatable {
     self.init(wrappedValue: wrappedValue, needsProcessed: needsProcessed, isEqual: ==)
   }
 }
+
+extension TrackedChanges: Hashable where Value: Hashable {
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(wrappedValue)
+    hasher.combine(needsProcessed)
+  }
+}

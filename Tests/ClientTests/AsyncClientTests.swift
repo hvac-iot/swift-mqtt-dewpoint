@@ -45,47 +45,69 @@ final class AsyncClientTests: XCTestCase {
     await client.shutdown()
   }
 
-  func testNewSensorSyntax() async throws {
-    let client = createClient(identifier: "testNewSensorSyntax")
+  func testSensor() async throws {
+    let client = createClient(identifier: "testSensor")
     let mqtt = client.client
-    let receivedPublishInfo = PublishInfoContainer()
-    let payload = ByteBufferAllocator().buffer(string: "75.123")
-    let sensor = TemperatureAndHumiditySensor(location: .return)
-
+    try client.addSensor(.init(location: .mixedAir))
     await client.connect()
 
-    try await mqtt.subscribeToTemperature(sensor: sensor)
+    Task { try await client.addSensorListeners() }
 
-    let listener = mqtt.createPublishListener()
-
-    Task { [receivedPublishInfo] in
-      for await result in listener {
-        switch result {
-        case let .failure(error):
-          XCTFail("\(error)")
-        case let .success(publish):
-          await receivedPublishInfo.addPublishInfo(publish)
-        }
-      }
-    }
-
-    try await mqtt.publish(to: sensor.topics.temperature, payload: payload, qos: .atLeastOnce)
+    try await mqtt.publish(
+      to: "sensors/mixed-air/temperture",
+      payload: ByteBufferAllocator().buffer(string: "75.123"),
+      qos: .atLeastOnce
+    )
 
     try await Task.sleep(for: .seconds(2))
 
-    XCTAssertEqual(receivedPublishInfo.count, 1)
+    XCTAssert(client.sensors.first!.needsProcessed)
+    XCTAssertEqual(client.sensors.first!.temperature, 75.123)
 
-    if let publish = receivedPublishInfo.first {
-      var buffer = publish.payload
-      let string = buffer.readString(length: buffer.readableBytes)
-      XCTAssertEqual(string, "75.123")
-    } else {
-      XCTFail("Did not receive any publish info.")
-    }
-
-    try await mqtt.disconnect()
-    try mqtt.syncShutdownGracefully()
+    await client.shutdown()
   }
+
+//   func testNewSensorSyntax() async throws {
+//     let client = createClient(identifier: "testNewSensorSyntax")
+//     let mqtt = client.client
+//     let receivedPublishInfo = PublishInfoContainer()
+//     let payload = ByteBufferAllocator().buffer(string: "75.123")
+//     let sensor = TemperatureAndHumiditySensor(location: .return)
+//
+//     await client.connect()
+//
+//     try await mqtt.subscribeToTemperature(sensor: sensor)
+//
+//     let listener = mqtt.createPublishListener()
+//
+//     Task { [receivedPublishInfo] in
+//       for await result in listener {
+//         switch result {
+//         case let .failure(error):
+//           XCTFail("\(error)")
+//         case let .success(publish):
+//           await receivedPublishInfo.addPublishInfo(publish)
+//         }
+//       }
+//     }
+//
+//     try await mqtt.publish(to: sensor.topics.temperature, payload: payload, qos: .atLeastOnce)
+//
+//     try await Task.sleep(for: .seconds(2))
+//
+//     XCTAssertEqual(receivedPublishInfo.count, 1)
+//
+//     if let publish = receivedPublishInfo.first {
+//       var buffer = publish.payload
+//       let string = buffer.readString(length: buffer.readableBytes)
+//       XCTAssertEqual(string, "75.123")
+//     } else {
+//       XCTFail("Did not receive any publish info.")
+//     }
+//
+//     try await mqtt.disconnect()
+//     try mqtt.syncShutdownGracefully()
+//   }
 }
 
 // MARK: Helpers for tests, some of these should be able to be removed once the AsyncClient interface is done.
