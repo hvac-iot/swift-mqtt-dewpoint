@@ -1,3 +1,5 @@
+// TODO: Remove
+
 /// A container for all the different MQTT topics that are needed by the application.
 public struct Topics: Codable, Equatable {
   /// The command topics the application can publish to.

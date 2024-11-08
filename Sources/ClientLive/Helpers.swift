@@ -40,6 +40,7 @@ extension RelativeHumidity: BufferInitalizable {
   }
 }
 
+// TODO: Remove below when migrated to async client.
 extension MQTTNIO.MQTTClient {
   /// Logs a failure for a given topic and error.
   func logFailure(topic: String, error: Error) {

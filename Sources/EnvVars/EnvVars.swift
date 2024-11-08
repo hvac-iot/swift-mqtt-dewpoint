@@ -5,25 +5,25 @@ import Foundation
 ///
 /// This allows us to keep sensitve settings out of the repository.
 public struct EnvVars: Codable, Equatable {
-  
+
   /// The current app environment.
   public var appEnv: AppEnv
-  
+
   /// The MQTT host.
   public var host: String
-  
+
   /// The MQTT port.
   public var port: String?
-  
+
   /// The identifier to use when connecting to the MQTT broker.
   public var identifier: String
-  
+
   /// The MQTT user name.
   public var userName: String?
-  
+
   /// The MQTT user password.
   public var password: String?
-  
+
   /// Create a new ``EnvVars``
   ///
   /// - Parameters:
@@ -40,7 +40,7 @@ public struct EnvVars: Codable, Equatable {
     identifier: String = "dewPoint-controller",
     userName: String? = "mqtt_user",
     password: String? = "secret!"
-  ){
+  ) {
     self.appEnv = appEnv
     self.host = host
     self.port = port
@@ -48,7 +48,7 @@ public struct EnvVars: Codable, Equatable {
     self.userName = userName
     self.password = password
   }
-  
+
   /// Custom coding keys.
   private enum CodingKeys: String, CodingKey {
     case appEnv = "APP_ENV"
@@ -58,7 +58,7 @@ public struct EnvVars: Codable, Equatable {
     case userName = "MQTT_USERNAME"
     case password = "MQTT_PASSWORD"
   }
-  
+
   /// Represents the different app environments.
   public enum AppEnv: String, Codable {
     case development

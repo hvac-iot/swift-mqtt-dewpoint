@@ -1,6 +1,7 @@
 import Foundation
 import Psychrometrics
 
+// TODO: Remove
 // TODO: Make this a struct, then create a Store class that holds the state??
 public final class State {
 
@@ -50,9 +51,9 @@ public final class State {
   }
 }
 
-extension State.Sensors {
+public extension State.Sensors {
 
-  public struct TemperatureHumiditySensor<Location>: Equatable {
+  struct TemperatureHumiditySensor<Location>: Equatable {
 
     @TrackedChanges
     public var temperature: Temperature?
@@ -97,8 +98,9 @@ extension State.Sensors {
   }
 
   // MARK: - Temperature / Humidity Sensor Location Namespaces
-  public enum MixedAir { }
-  public enum PostCoil { }
-  public enum Return { }
-  public enum Supply { }
+
+  enum MixedAir {}
+  enum PostCoil {}
+  enum Return {}
+  enum Supply {}
 }

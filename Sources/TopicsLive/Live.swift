@@ -1,27 +1,28 @@
 import Models
 
 // TODO: Fix other live topics
-extension Topics {
-  
-  public static let live = Self.init(
+public extension Topics {
+
+  static let live = Self(
     commands: .init(),
     sensors: .init(
       mixedAirSensor: .live(location: .mixedAir),
       postCoilSensor: .live(location: .postCoil),
       returnAirSensor: .live(location: .return),
-      supplyAirSensor: .live(location: .supply)),
+      supplyAirSensor: .live(location: .supply)
+    ),
     setPoints: .init(),
     states: .init()
   )
 }
 
-extension Topics.Sensors {
-  fileprivate enum Location: CustomStringConvertible {
+private extension Topics.Sensors {
+  enum Location: CustomStringConvertible {
     case mixedAir
     case postCoil
     case `return`
     case supply
-    
+
     var description: String {
       switch self {
       case .mixedAir:
@@ -37,8 +38,8 @@ extension Topics.Sensors {
   }
 }
 
-extension Topics.Sensors.TemperatureAndHumiditySensor {
-  fileprivate static func live(
+private extension Topics.Sensors.TemperatureAndHumiditySensor {
+  static func live(
     prefix: String = "frankensystem",
     location: Topics.Sensors.Location
   ) -> Self {

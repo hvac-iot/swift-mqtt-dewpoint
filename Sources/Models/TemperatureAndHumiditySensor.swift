@@ -75,6 +75,8 @@ public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable {
   }
 
   /// Check whether any of the sensor values have changed and need processed.
+  ///
+  /// - Note: Setting a value will set to both the temperature and humidity properties.
   public var needsProcessed: Bool {
     get { $temperature.needsProcessed || $humidity.needsProcessed }
     set {
@@ -85,9 +87,9 @@ public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable {
 
   /// Represents the different locations of a temperature and humidity sensor, which can
   /// be used to derive the topic to both listen and publish new values to.
-  public enum Location: String, Equatable, Hashable {
-    case mixedAir = "mixed-air"
-    case postCoil = "post-coil"
+  public enum Location: String, CaseIterable, Equatable, Hashable {
+    case mixedAir = "mixed_air"
+    case postCoil = "post_coil"
     case `return`
     case supply
   }
@@ -95,23 +97,41 @@ public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable {
   /// Represents the MQTT topics to listen for updated sensor values on.
   public struct Topics: Equatable, Hashable {
 
-    /// The temperature topic of the sensor.
-    public let temperature: String
+    /// The dew-point temperature topic for the sensor.
+    public let dewPoint: String
+
+    /// The enthalpy topic for the sensor.
+    public let enthalpy: String
 
     /// The humidity topic of the sensor.
     public let humidity: String
 
+    /// The temperature topic of the sensor.
+    public let temperature: String
+
     public init(
-      temperature: String,
-      humidity: String
+      dewPoint: String,
+      enthalpy: String,
+      humidity: String,
+      temperature: String
     ) {
-      self.temperature = temperature
+      self.dewPoint = dewPoint
+      self.enthalpy = enthalpy
       self.humidity = humidity
+      self.temperature = temperature
     }
 
-    init(location: TemperatureAndHumiditySensor.Location) {
-      self.temperature = "sensors/\(location.rawValue)/temperature"
-      self.humidity = "sensors/\(location.rawValue)/humidity"
+    public init(topicPrefix: String? = "frankensystem", location: TemperatureAndHumiditySensor.Location) {
+      var prefix = topicPrefix ?? ""
+      if prefix.reversed().starts(with: "/") {
+        prefix = "\(prefix.dropLast())"
+      }
+      self.init(
+        dewPoint: "\(prefix)/sensors/\(location.rawValue)_dew_point/state",
+        enthalpy: "\(prefix)/sensors/\(location.rawValue)_enthalpy/state",
+        humidity: "\(prefix)/sensors/\(location.rawValue)_humidity/state",
+        temperature: "\(prefix)/sensors/\(location.rawValue)_temperature/state"
+      )
     }
   }
 }

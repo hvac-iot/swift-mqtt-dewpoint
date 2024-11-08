@@ -5,7 +5,8 @@ import MQTTNIO
 import NIO
 import Psychrometrics
 
-public class AsyncClient {
+// TODO: Pass in eventLoopGroup and MQTTClient.
+public actor SensorsClient {
 
   public static let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
   public let client: MQTTClient
@@ -39,17 +40,17 @@ public class AsyncClient {
     self.sensors = sensors
   }
 
-  public func addSensor(_ sensor: TemperatureAndHumiditySensor) throws {
+  public func addSensor(_ sensor: TemperatureAndHumiditySensor) async throws {
     guard sensors.firstIndex(where: { $0.location == sensor.location }) == nil else {
       throw SensorExists()
     }
     sensors.append(sensor)
   }
 
-  public func connect() async {
+  public func connect(cleanSession: Bool = true) async {
     do {
-      try await client.connect()
-      client.addCloseListener(named: "AsyncClient") { [self] _ in
+      try await client.connect(cleanSession: cleanSession)
+      client.addCloseListener(named: "SensorsClient") { [self] _ in
         guard !self.shuttingDown else { return }
         Task {
           self.logger.debug("Connection closed.")
@@ -60,6 +61,17 @@ public class AsyncClient {
       logger.debug("Connection successful.")
     } catch {
       logger.trace("Connection Failed.\n\(error)")
+    }
+  }
+
+  public func start() async throws {
+    do {
+      try await subscribeToSensors()
+      try await addSensorListeners()
+      logger.debug("Begin listening to sensors...")
+    } catch {
+      logger.trace("Error:\n\(error)")
+      throw error
     }
   }
 
@@ -77,105 +89,61 @@ public class AsyncClient {
   }
 
   func addSensorListeners(qos: MQTTQoS = .exactlyOnce) async throws {
-    for sensor in sensors {
-      try await client.subscribeToSensor(sensor, qos: qos)
-      let listener = client.createPublishListener()
-      for await result in listener {
+    try await subscribeToSensors(qos: qos)
+    client.addPublishListener(named: "SensorsClient") { result in
+      do {
         switch result {
         case let .success(value):
           var buffer = value.payload
           let topic = value.topicName
-          logger.debug("Received new value for topic: \(topic)")
+          self.logger.trace("Received new value for topic: \(topic)")
 
           if topic.contains("temperature") {
             // Decode and update the temperature value
             guard let temperature = Temperature(buffer: &buffer) else {
-              logger.debug("Failed to decode temperature from buffer: \(buffer)")
+              self.logger.debug("Failed to decode temperature from buffer: \(buffer)")
               throw DecodingError()
             }
-            try sensors.update(topic: topic, keyPath: \.temperature, with: temperature)
-
+            try self.sensors.update(topic: topic, keyPath: \.temperature, with: temperature)
+            Task { try await self.publishUpdates() }
           } else if topic.contains("humidity") {
             // Decode and update the temperature value
             guard let humidity = RelativeHumidity(buffer: &buffer) else {
-              logger.debug("Failed to decode humidity from buffer: \(buffer)")
+              self.logger.debug("Failed to decode humidity from buffer: \(buffer)")
               throw DecodingError()
             }
-            try sensors.update(topic: topic, keyPath: \.humidity, with: humidity)
-
-          } else {
-            let message = """
-            Unexpected value for topic: \(topic)
-            Expected to contain either 'temperature' or 'humidity'
-            """
-            logger.debug("\(message)")
+            try self.sensors.update(topic: topic, keyPath: \.humidity, with: humidity)
+            Task { try await self.publishUpdates() }
           }
 
-          // TODO: Publish dew-point & enthalpy if needed.
-
         case let .failure(error):
-          logger.trace("Error:\n\(error)")
+          self.logger.trace("Error:\n\(error)")
           throw error
         }
+      } catch {
+        self.logger.trace("Error:\n\(error)")
       }
     }
   }
 
-  // Need to save the recieved values somewhere.
-  // TODO: Remove.
-  func addPublishListener<T>(
-    topic: String,
-    decoding _: T.Type
-  ) async throws where T: BufferInitalizable {
-    _ = try await client.subscribe(to: [.init(topicFilter: topic, qos: .atLeastOnce)])
-    Task {
-      let listener = self.client.createPublishListener()
-      for await result in listener {
-        switch result {
-        case let .success(packet):
-          var buffer = packet.payload
-          guard let value = T(buffer: &buffer) else {
-            logger.debug("Could not decode buffer: \(buffer)")
-            return
-          }
-          logger.debug("Recieved value: \(value)")
-        case let .failure(error):
-          logger.trace("Error:\n\(error)")
-        }
-      }
-    }
-  }
-
-  private func publish(string: String, to topic: String) async throws {
+  private func publish(double: Double?, to topic: String) async throws {
+    guard let double else { return }
+    let rounded = round(double * 100) / 100
+    logger.debug("Publishing \(rounded), to: \(topic)")
     try await client.publish(
       to: topic,
-      payload: ByteBufferAllocator().buffer(string: string),
-      qos: .atLeastOnce
+      payload: ByteBufferAllocator().buffer(string: "\(rounded)"),
+      qos: .exactlyOnce,
+      retain: true
     )
   }
 
-  private func publish(double: Double, to topic: String) async throws {
-    let rounded = round(double * 100) / 100
-    try await publish(string: "\(rounded)", to: topic)
-  }
-
-  func publishDewPoint(_ request: Client.SensorPublishRequest) async throws {
-    // fix
-    guard let (dewPoint, topic) = request.dewPointData(topics: .init(), units: nil) else { return }
-    try await publish(double: dewPoint.rawValue, to: topic)
-    logger.debug("Published dewpoint: \(dewPoint.rawValue), to: \(topic)")
-  }
-
-  func publishEnthalpy(_ request: Client.SensorPublishRequest) async throws {
-    // fix
-    guard let (enthalpy, topic) = request.enthalpyData(altitude: .seaLevel, topics: .init(), units: nil) else { return }
-    try await publish(double: enthalpy.rawValue, to: topic)
-    logger.debug("Publihsed enthalpy: \(enthalpy.rawValue), to: \(topic)")
-  }
-
-  public func publishSensor(_ request: Client.SensorPublishRequest) async throws {
-    try await publishDewPoint(request)
-    try await publishEnthalpy(request)
+  func publishUpdates() async throws {
+    for sensor in sensors.filter(\.needsProcessed) {
+      try await publish(double: sensor.dewPoint?.rawValue, to: sensor.topics.dewPoint)
+      try await publish(double: sensor.enthalpy?.rawValue, to: sensor.topics.enthalpy)
+      try sensors.hasProcessed(sensor)
+    }
   }
 }
 
@@ -204,13 +172,22 @@ struct DecodingError: Error {}
 struct NotFoundError: Error {}
 struct SensorExists: Error {}
 
-extension TemperatureAndHumiditySensor.Topics {
+private extension TemperatureAndHumiditySensor.Topics {
   func contains(_ topic: String) -> Bool {
     temperature == topic || humidity == topic
   }
 }
 
-extension Array where Element == TemperatureAndHumiditySensor {
+// TODO: Move to dewpoint-controller/main.swift
+public extension Array where Element == TemperatureAndHumiditySensor {
+  static var live: Self {
+    TemperatureAndHumiditySensor.Location.allCases.map {
+      TemperatureAndHumiditySensor(location: $0)
+    }
+  }
+}
+
+private extension Array where Element == TemperatureAndHumiditySensor {
 
   mutating func update<V>(
     topic: String,
@@ -221,6 +198,13 @@ extension Array where Element == TemperatureAndHumiditySensor {
       throw NotFoundError()
     }
     self[index][keyPath: keyPath] = value
+  }
+
+  mutating func hasProcessed(_ sensor: TemperatureAndHumiditySensor) throws {
+    guard let index = firstIndex(where: { $0.id == sensor.id }) else {
+      throw NotFoundError()
+    }
+    self[index].needsProcessed = false
   }
 
 }

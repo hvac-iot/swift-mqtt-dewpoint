@@ -13,8 +13,6 @@ services:
     working_dir: /app
     networks:
       - test
-#     volumes:
-#       - .:/app
     depends_on:
       - mosquitto-test
     environment:

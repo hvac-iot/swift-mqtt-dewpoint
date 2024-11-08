@@ -52,7 +52,7 @@ public struct TrackedChanges<Value> {
     case needsProcessed
   }
 
-  /// Check whether the value needs processed.
+  /// Whether the value needs processed.
   public var needsProcessed: Bool {
     get { tracking == .needsProcessed }
     set {
