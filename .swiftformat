@@ -1,1 +1,9 @@
 --self init-only
+--indent 2
+--ifdef indent
+--trimwhitespace always
+--wraparguments preserve
+--wrapcollections preserve
+--wrapconditions after-first
+--typeblanklines preserve
+--commas inline

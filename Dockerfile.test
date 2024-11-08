@@ -1,0 +1,6 @@
+FROM swift:5.10
+WORKDIR /app
+COPY ./Package.* ./
+RUN swift package resolve
+COPY . .
+CMD ["/bin/bash", "-xc", "swift", "test"]

@@ -23,6 +23,8 @@ stop-mosquitto:
 	@docker-compose rm -f mosquitto || true
 
 test-docker:
-	@docker-compose run -i test
+	@docker-compose run --remove-orphans -i --rm test
 	@docker-compose kill mosquitto-test
 	@docker-compose rm -f
+
+test: test-docker

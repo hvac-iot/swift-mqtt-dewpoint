@@ -1,7 +1,5 @@
-
 /// A container for all the different MQTT topics that are needed by the application.
 public struct Topics: Codable, Equatable {
-
   /// The command topics the application can publish to.
   public var commands: Commands
 
@@ -35,7 +33,6 @@ public struct Topics: Codable, Equatable {
 
   /// Represents the sensor topics.
   public struct Sensors: Codable, Equatable {
-
     public var mixedAirSensor: TemperatureAndHumiditySensor<State.Sensors.MixedAir>
     public var postCoilSensor: TemperatureAndHumiditySensor<State.Sensors.PostCoil>
     public var returnAirSensor: TemperatureAndHumiditySensor<State.Sensors.Return>
@@ -81,7 +78,6 @@ public struct Topics: Codable, Equatable {
 
   /// A container for set point related topics used by the application.
   public struct SetPoints: Codable, Equatable {
-
     /// The topic for the humidify set point.
     public var humidify: Humidify
 
@@ -103,7 +99,6 @@ public struct Topics: Codable, Equatable {
 
     /// A container for the humidification set point topics used by the application.
     public struct Humidify: Codable, Equatable {
-
       /// The topic for dew point control mode set point.
       public var dewPoint: String
 
@@ -126,7 +121,6 @@ public struct Topics: Codable, Equatable {
 
     /// A container for dehumidifcation set point topics.
     public struct Dehumidify: Codable, Equatable {
-
       /// A low setting for dew point control modes.
       public var lowDewPoint: String
 
@@ -162,7 +156,6 @@ public struct Topics: Codable, Equatable {
 
   /// A container for control state topics used by the application.
   public struct States: Codable, Equatable {
-
     /// The topic for the control mode.
     public var mode: String
 
@@ -183,7 +176,6 @@ public struct Topics: Codable, Equatable {
 
     /// A container for reading the current state of a relay.
     public struct Relays: Codable, Equatable {
-
       /// The dehumidification stage-1 relay topic.
       public var dehumdification1: String
 
@@ -213,7 +205,6 @@ public struct Topics: Codable, Equatable {
 
   /// A container for commands topics that the application can publish to.
   public struct Commands: Codable, Equatable {
-
     /// The relay command topics.
     public var relays: Relays
 
@@ -227,7 +218,6 @@ public struct Topics: Codable, Equatable {
 
     /// A container for relay command topics used by the application.
     public struct Relays: Codable, Equatable {
-
       /// The dehumidification stage-1 relay topic.
       public var dehumidification1: String
 
@@ -257,8 +247,9 @@ public struct Topics: Codable, Equatable {
 }
 
 // MARK: Helpers
-extension Topics.Sensors.TemperatureAndHumiditySensor {
-  public static func `default`(location: String) -> Self {
+
+public extension Topics.Sensors.TemperatureAndHumiditySensor {
+  static func `default`(location: String) -> Self {
     .init(
       temperature: "sensors/\(location)/temperature",
       humidity: "sensors/\(location)/humidity",

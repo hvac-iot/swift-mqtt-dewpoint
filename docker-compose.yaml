@@ -6,15 +6,15 @@ services:
     env_file: .env
 
   test:
-    image: swift:5.10
-    #build:
-    #context: ./
+    build:
+      context: .
+      dockerfile: Dockerfile.test
     platform: linux/amd64
     working_dir: /app
     networks:
       - test
-    volumes:
-      - .:/app
+#     volumes:
+#       - .:/app
     depends_on:
       - mosquitto-test
     environment:
@@ -44,4 +44,3 @@ networks:
   test:
     driver: bridge
     external: false
-
