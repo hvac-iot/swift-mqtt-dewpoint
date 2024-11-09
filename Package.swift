@@ -134,7 +134,8 @@ let package = Package(
       dependencies: [
         "SensorsService",
         // TODO: Remove.
-        "ClientLive"
+        "ClientLive",
+        .product(name: "PsychrometricClientLive", package: "swift-psychrometrics")
       ]
     ),
     .target(
