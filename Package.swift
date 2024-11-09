@@ -14,11 +14,7 @@ let package = Package(
   products: [
     .executable(name: "dewPoint-controller", targets: ["dewPoint-controller"]),
     .library(name: "Bootstrap", targets: ["Bootstrap"]),
-    .library(name: "DewPointEnvironment", targets: ["DewPointEnvironment"]),
-    .library(name: "EnvVars", targets: ["EnvVars"]),
     .library(name: "Models", targets: ["Models"]),
-    .library(name: "Client", targets: ["Client"]),
-    .library(name: "ClientLive", targets: ["ClientLive"]),
     .library(name: "MQTTConnectionService", targets: ["MQTTConnectionService"]),
     .library(name: "SensorsService", targets: ["SensorsService"])
   ],
@@ -33,8 +29,6 @@ let package = Package(
       name: "dewPoint-controller",
       dependencies: [
         "Bootstrap",
-        "ClientLive",
-        "TopicsLive",
         .product(name: "MQTTNIO", package: "mqtt-nio"),
         .product(name: "NIO", package: "swift-nio")
       ]
@@ -46,28 +40,10 @@ let package = Package(
     .target(
       name: "Bootstrap",
       dependencies: [
-        "DewPointEnvironment",
-        "EnvVars",
-        "ClientLive",
         "Models",
         .product(name: "MQTTNIO", package: "mqtt-nio"),
         .product(name: "NIO", package: "swift-nio")
       ],
-      swiftSettings: swiftSettings
-    ),
-    .target(
-      name: "DewPointEnvironment",
-      dependencies: [
-        "EnvVars",
-        "Client",
-        "Models",
-        .product(name: "MQTTNIO", package: "mqtt-nio")
-      ],
-      swiftSettings: swiftSettings
-    ),
-    .target(
-      name: "EnvVars",
-      dependencies: [],
       swiftSettings: swiftSettings
     ),
     .target(
@@ -78,36 +54,9 @@ let package = Package(
       swiftSettings: swiftSettings
     ),
     .target(
-      name: "Client",
-      dependencies: [
-        "Models",
-        // .product(name: "CoreUnitTypes", package: "swift-psychrometrics"),
-        .product(name: "NIO", package: "swift-nio"),
-        .product(name: "PsychrometricClient", package: "swift-psychrometrics")
-      ],
-      swiftSettings: swiftSettings
-    ),
-    .target(
-      name: "ClientLive",
-      dependencies: [
-        "Client",
-        "EnvVars",
-        .product(name: "MQTTNIO", package: "mqtt-nio"),
-        .product(name: "ServiceLifecycle", package: "swift-service-lifecycle")
-      ],
-      swiftSettings: swiftSettings
-    ),
-    .testTarget(
-      name: "ClientTests",
-      dependencies: [
-        "Client",
-        "ClientLive"
-      ]
-    ),
-    .target(
       name: "MQTTConnectionService",
       dependencies: [
-        "EnvVars",
+        "Models",
         .product(name: "MQTTNIO", package: "mqtt-nio"),
         .product(name: "ServiceLifecycle", package: "swift-service-lifecycle")
       ],
@@ -133,17 +82,8 @@ let package = Package(
       name: "SensorsServiceTests",
       dependencies: [
         "SensorsService",
-        // TODO: Remove.
-        "ClientLive",
         .product(name: "PsychrometricClientLive", package: "swift-psychrometrics")
       ]
-    ),
-    .target(
-      name: "TopicsLive",
-      dependencies: [
-        "Models"
-      ],
-      swiftSettings: swiftSettings
     )
   ]
 )
