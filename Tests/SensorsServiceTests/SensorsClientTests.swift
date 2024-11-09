@@ -5,6 +5,7 @@ import Models
 import MQTTNIO
 import NIO
 import Psychrometrics
+@testable import SensorsService
 import XCTest
 
 final class SensorsClientTests: XCTestCase {

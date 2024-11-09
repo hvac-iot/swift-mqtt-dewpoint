@@ -99,6 +99,12 @@ public actor SensorsService: Service {
 
 }
 
+// MARK: - Errors
+
+struct DecodingError: Error {}
+struct NotFoundError: Error {}
+struct SensorExists: Error {}
+
 // MARK: - Helpers
 
 struct MQTTClientNotConnected: Error {}

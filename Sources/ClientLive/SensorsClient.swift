@@ -6,6 +6,7 @@ import NIO
 import Psychrometrics
 import ServiceLifecycle
 
+// TODO: Remove.
 // TODO: Pass in eventLoopGroup and MQTTClient.
 public actor SensorsClient {
 

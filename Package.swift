@@ -14,7 +14,8 @@ let package = Package(
     .library(name: "EnvVars", targets: ["EnvVars"]),
     .library(name: "Models", targets: ["Models"]),
     .library(name: "Client", targets: ["Client"]),
-    .library(name: "ClientLive", targets: ["ClientLive"])
+    .library(name: "ClientLive", targets: ["ClientLive"]),
+    .library(name: "SensorsService", targets: ["SensorsService"])
   ],
   dependencies: [
     .package(url: "https://github.com/swift-server-community/mqtt-nio.git", from: "2.0.0"),
@@ -96,6 +97,22 @@ let package = Package(
       name: "TopicsLive",
       dependencies: [
         "Models"
+      ]
+    ),
+    .target(
+      name: "SensorsService",
+      dependencies: [
+        "Models",
+        .product(name: "MQTTNIO", package: "mqtt-nio"),
+        .product(name: "ServiceLifecycle", package: "swift-service-lifecycle")
+      ]
+    ),
+    .testTarget(
+      name: "SensorsServiceTests",
+      dependencies: [
+        "SensorsService",
+        // TODO: Remove.
+        "ClientLive"
       ]
     )
   ]
