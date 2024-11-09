@@ -1,10 +1,13 @@
-@preconcurrency import Psychrometrics
+import Dependencies
+import PsychrometricClient
 
 /// Represents a temperature and humidity sensor that can be used to derive
 /// the dew-point temperature and enthalpy values.
 ///
 /// > Note: Temperature values are received in `celsius`.
-public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable, @unchecked Sendable {
+public struct TemperatureAndHumiditySensor: Identifiable, Sendable {
+
+  @Dependency(\.psychrometricClient) private var psychrometrics
 
   /// The identifier of the sensor, same as the location.
   public var id: Location { location }
@@ -21,7 +24,7 @@ public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable, @
 
   /// The current temperature value of the sensor.
   @TrackedChanges
-  public var temperature: Temperature?
+  public var temperature: DryBulb?
 
   /// The topics to listen for updated sensor values.
   public let topics: Topics
@@ -37,7 +40,7 @@ public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable, @
   public init(
     location: Location,
     altitude: Length = .feet(800.0),
-    temperature: Temperature? = nil,
+    temperature: DryBulb? = nil,
     humidity: RelativeHumidity? = nil,
     needsProcessed: Bool = false,
     topics: Topics? = nil
@@ -51,22 +54,26 @@ public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable, @
 
   /// The calculated dew-point temperature of the sensor.
   public var dewPoint: DewPoint? {
-    guard let temperature = temperature,
-          let humidity = humidity,
-          !temperature.rawValue.isNaN,
-          !humidity.rawValue.isNaN
-    else { return nil }
-    return .init(dryBulb: temperature, humidity: humidity)
+    get async {
+      guard let temperature = temperature,
+            let humidity = humidity
+      else { return nil }
+      return try? await psychrometrics.dewPoint(.dryBulb(temperature, relativeHumidity: humidity))
+      // return .init(dryBulb: temperature, humidity: humidity)
+    }
   }
 
   /// The calculated enthalpy of the sensor.
   public var enthalpy: EnthalpyOf<MoistAir>? {
-    guard let temperature = temperature,
-          let humidity = humidity,
-          !temperature.rawValue.isNaN,
-          !humidity.rawValue.isNaN
-    else { return nil }
-    return .init(dryBulb: temperature, humidity: humidity, altitude: altitude)
+    get async {
+      guard let temperature = temperature,
+            let humidity = humidity
+      else { return nil }
+      return try? await psychrometrics.enthalpy.moistAir(
+        .dryBulb(temperature, relativeHumidity: humidity, altitude: altitude)
+      )
+      // return .init(dryBulb: temperature, humidity: humidity, altitude: altitude)
+    }
   }
 
   /// Check whether any of the sensor values have changed and need processed.
@@ -82,7 +89,7 @@ public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable, @
 
   /// Represents the different locations of a temperature and humidity sensor, which can
   /// be used to derive the topic to both listen and publish new values to.
-  public enum Location: String, CaseIterable, Equatable, Hashable {
+  public enum Location: String, CaseIterable, Equatable, Hashable, Sendable {
     case mixedAir = "mixed_air"
     case postCoil = "post_coil"
     case `return`
@@ -90,7 +97,7 @@ public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable, @
   }
 
   /// Represents the MQTT topics to listen for updated sensor values on.
-  public struct Topics: Equatable, Hashable {
+  public struct Topics: Equatable, Hashable, Sendable {
 
     /// The dew-point temperature topic for the sensor.
     public let dewPoint: String

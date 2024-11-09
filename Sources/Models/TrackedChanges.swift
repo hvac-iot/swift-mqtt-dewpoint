@@ -96,3 +96,5 @@ extension TrackedChanges: Hashable where Value: Hashable {
     hasher.combine(needsProcessed)
   }
 }
+
+extension TrackedChanges: Sendable where Value: Sendable {}

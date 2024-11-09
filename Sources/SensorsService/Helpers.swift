@@ -1,10 +1,9 @@
-import CoreUnitTypes
 import Logging
 import Models
 import MQTTNIO
 import NIO
 import NIOFoundationCompat
-import Psychrometrics
+import SharedModels
 
 /// Represents a type that can be initialized by a ``ByteBuffer``.
 protocol BufferInitalizable {
@@ -24,18 +23,39 @@ extension Double: BufferInitalizable {
   }
 }
 
-extension Temperature: BufferInitalizable {
-  /// Attempt to create / parse a temperature from a byte buffer.
+// extension DryBulb: BufferInitalizable {
+//   /// Attempt to create / parse a temperature from a byte buffer.
+//   init?(buffer: inout ByteBuffer) {
+//     guard let value = Double(buffer: &buffer) else { return nil }
+//     self.init(.init(value, units: .celsius))
+//   }
+// }
+
+extension Tagged: BufferInitalizable where RawValue: BufferInitalizable {
   init?(buffer: inout ByteBuffer) {
-    guard let value = Double(buffer: &buffer) else { return nil }
-    self.init(value, units: .celsius)
+    guard let value = RawValue(buffer: &buffer) else { return nil }
+    self.init(value)
   }
 }
 
-extension RelativeHumidity: BufferInitalizable {
-  /// Attempt to create / parse a relative humidity from a byte buffer.
+extension Humidity<Relative>: BufferInitalizable {
   init?(buffer: inout ByteBuffer) {
     guard let value = Double(buffer: &buffer) else { return nil }
     self.init(value)
   }
 }
+
+extension Temperature<DryAir>: BufferInitalizable {
+  init?(buffer: inout ByteBuffer) {
+    guard let value = Double(buffer: &buffer) else { return nil }
+    self.init(value)
+  }
+}
+
+// extension RelativeHumidity: BufferInitalizable {
+//   /// Attempt to create / parse a relative humidity from a byte buffer.
+//   init?(buffer: inout ByteBuffer) {
+//     guard let value = Double(buffer: &buffer) else { return nil }
+//     self.init(value)
+//   }
+// }

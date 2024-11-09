@@ -3,7 +3,7 @@ import Logging
 import Models
 @preconcurrency import MQTTNIO
 import NIO
-import Psychrometrics
+import PsychrometricClient
 import ServiceLifecycle
 
 public actor SensorsService: Service {
@@ -52,7 +52,7 @@ public actor SensorsService: Service {
       if topic.contains("temperature") {
         // do something.
         var buffer = value.payload
-        guard let temperature = Temperature(buffer: &buffer) else {
+        guard let temperature = DryBulb(buffer: &buffer) else {
           logger.trace("Decoding error for topic: \(topic)")
           throw DecodingError()
         }
@@ -96,8 +96,8 @@ public actor SensorsService: Service {
 
   private func publishUpdates() async throws {
     for sensor in sensors.filter(\.needsProcessed) {
-      try await publish(double: sensor.dewPoint?.rawValue, to: sensor.topics.dewPoint)
-      try await publish(double: sensor.enthalpy?.rawValue, to: sensor.topics.enthalpy)
+      try await publish(double: sensor.dewPoint?.value, to: sensor.topics.dewPoint)
+      try await publish(double: sensor.enthalpy?.value, to: sensor.topics.enthalpy)
       try sensors.hasProcessed(sensor)
     }
   }

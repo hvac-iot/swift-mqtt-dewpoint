@@ -25,7 +25,7 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/swift-server-community/mqtt-nio.git", from: "2.0.0"),
     .package(url: "https://github.com/apple/swift-nio", from: "2.0.0"),
-    .package(url: "https://github.com/swift-psychrometrics/swift-psychrometrics", exact: "0.1.0"),
+    .package(url: "https://github.com/swift-psychrometrics/swift-psychrometrics", exact: "0.2.3"),
     .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.3.0")
   ],
   targets: [
@@ -73,7 +73,7 @@ let package = Package(
     .target(
       name: "Models",
       dependencies: [
-        .product(name: "Psychrometrics", package: "swift-psychrometrics")
+        .product(name: "PsychrometricClient", package: "swift-psychrometrics")
       ],
       swiftSettings: swiftSettings
     ),
@@ -81,9 +81,9 @@ let package = Package(
       name: "Client",
       dependencies: [
         "Models",
-        .product(name: "CoreUnitTypes", package: "swift-psychrometrics"),
+        // .product(name: "CoreUnitTypes", package: "swift-psychrometrics"),
         .product(name: "NIO", package: "swift-nio"),
-        .product(name: "Psychrometrics", package: "swift-psychrometrics")
+        .product(name: "PsychrometricClient", package: "swift-psychrometrics")
       ],
       swiftSettings: swiftSettings
     ),

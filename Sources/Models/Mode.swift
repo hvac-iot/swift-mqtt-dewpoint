@@ -1,4 +1,4 @@
-import CoreUnitTypes
+import PsychrometricClient
 
 // TODO: Remove
 
@@ -21,7 +21,7 @@ public enum Mode: Equatable {
   public enum HumidifyMode: Equatable {
 
     /// Control humidifying based off dew-point.
-    case dewPoint(Temperature)
+    case dewPoint(DewPoint)
 
     /// Control humidifying based off relative humidity.
     case relativeHumidity(RelativeHumidity)
@@ -31,7 +31,7 @@ public enum Mode: Equatable {
   public enum DehumidifyMode: Equatable {
 
     /// Control dehumidifying based off dew-point.
-    case dewPoint(high: Temperature, low: Temperature)
+    case dewPoint(high: DewPoint, low: DewPoint)
 
     /// Control humidifying based off relative humidity.
     case relativeHumidity(high: RelativeHumidity, low: RelativeHumidity)

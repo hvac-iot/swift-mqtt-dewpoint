@@ -1,5 +1,5 @@
 import Foundation
-@preconcurrency import Psychrometrics
+import PsychrometricClient
 
 // TODO: Remove
 // TODO: Make this a struct, then create a Store class that holds the state??
@@ -7,16 +7,12 @@ public final class State {
 
   public var altitude: Length
   public var sensors: Sensors
-  public var units: PsychrometricEnvironment.Units {
-    didSet {
-      PsychrometricEnvironment.shared.units = units
-    }
-  }
+  public var units: PsychrometricUnits
 
   public init(
     altitude: Length = .seaLevel,
     sensors: Sensors = .init(),
-    units: PsychrometricEnvironment.Units = .imperial
+    units: PsychrometricUnits = .imperial
   ) {
     self.altitude = altitude
     self.sensors = sensors
@@ -56,7 +52,7 @@ public extension State.Sensors {
   struct TemperatureHumiditySensor<Location>: Equatable {
 
     @TrackedChanges
-    public var temperature: Temperature?
+    public var temperature: DryBulb?
 
     @TrackedChanges
     public var humidity: RelativeHumidity?
@@ -69,26 +65,26 @@ public extension State.Sensors {
       }
     }
 
-    public func dewPoint(units: PsychrometricEnvironment.Units? = nil) -> DewPoint? {
+    // WARN: Fix me.
+    public func dewPoint(units _: PsychrometricUnits? = nil) -> DewPoint? {
       guard let temperature = temperature,
-            let humidity = humidity,
-            !temperature.rawValue.isNaN,
-            !humidity.rawValue.isNaN
+            let humidity = humidity
       else { return nil }
-      return .init(dryBulb: temperature, humidity: humidity, units: units)
+      return nil
+      // return .init(dryBulb: temperature, humidity: humidity, units: units)
     }
 
-    public func enthalpy(altitude: Length, units: PsychrometricEnvironment.Units? = nil) -> EnthalpyOf<MoistAir>? {
+    // WARN: Fix me.
+    public func enthalpy(altitude _: Length, units _: PsychrometricUnits? = nil) -> EnthalpyOf<MoistAir>? {
       guard let temperature = temperature,
-            let humidity = humidity,
-            !temperature.rawValue.isNaN,
-            !humidity.rawValue.isNaN
+            let humidity = humidity
       else { return nil }
-      return .init(dryBulb: temperature, humidity: humidity, altitude: altitude, units: units)
+      return nil
+      // return .init(dryBulb: temperature, humidity: humidity, altitude: altitude, units: units)
     }
 
     public init(
-      temperature: Temperature? = nil,
+      temperature: DryBulb? = nil,
       humidity: RelativeHumidity? = nil,
       needsProcessed: Bool = false
     ) {
