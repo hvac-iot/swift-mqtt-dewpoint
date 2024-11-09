@@ -8,7 +8,7 @@ bootstrap-topics:
 bootstrap: bootstrap-env bootstrap-topics
 
 build:
-	@swift build
+	@swift build -Xswiftc -strict-concurrency=complete
 
 clean:
 	rm -rf .build

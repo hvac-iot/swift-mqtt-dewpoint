@@ -1,7 +1,7 @@
 // TODO: Remove
 
 /// A container for all the different MQTT topics that are needed by the application.
-public struct Topics: Codable, Equatable {
+public struct Topics: Codable, Equatable, Sendable {
   /// The command topics the application can publish to.
   public var commands: Commands
 
@@ -34,7 +34,7 @@ public struct Topics: Codable, Equatable {
   }
 
   /// Represents the sensor topics.
-  public struct Sensors: Codable, Equatable {
+  public struct Sensors: Codable, Equatable, Sendable {
     public var mixedAirSensor: TemperatureAndHumiditySensor<State.Sensors.MixedAir>
     public var postCoilSensor: TemperatureAndHumiditySensor<State.Sensors.PostCoil>
     public var returnAirSensor: TemperatureAndHumiditySensor<State.Sensors.Return>
@@ -52,7 +52,7 @@ public struct Topics: Codable, Equatable {
       self.supplyAirSensor = supplyAirSensor
     }
 
-    public struct TemperatureAndHumiditySensor<Location>: Codable, Equatable {
+    public struct TemperatureAndHumiditySensor<Location>: Codable, Equatable, Sendable {
       public var temperature: String
       public var humidity: String
       public var dewPoint: String
@@ -79,7 +79,7 @@ public struct Topics: Codable, Equatable {
   }
 
   /// A container for set point related topics used by the application.
-  public struct SetPoints: Codable, Equatable {
+  public struct SetPoints: Codable, Equatable, Sendable {
     /// The topic for the humidify set point.
     public var humidify: Humidify
 
@@ -100,7 +100,7 @@ public struct Topics: Codable, Equatable {
     }
 
     /// A container for the humidification set point topics used by the application.
-    public struct Humidify: Codable, Equatable {
+    public struct Humidify: Codable, Equatable, Sendable {
       /// The topic for dew point control mode set point.
       public var dewPoint: String
 
@@ -122,7 +122,7 @@ public struct Topics: Codable, Equatable {
     }
 
     /// A container for dehumidifcation set point topics.
-    public struct Dehumidify: Codable, Equatable {
+    public struct Dehumidify: Codable, Equatable, Sendable {
       /// A low setting for dew point control modes.
       public var lowDewPoint: String
 
@@ -157,7 +157,7 @@ public struct Topics: Codable, Equatable {
   }
 
   /// A container for control state topics used by the application.
-  public struct States: Codable, Equatable {
+  public struct States: Codable, Equatable, Sendable {
     /// The topic for the control mode.
     public var mode: String
 
@@ -177,7 +177,7 @@ public struct Topics: Codable, Equatable {
     }
 
     /// A container for reading the current state of a relay.
-    public struct Relays: Codable, Equatable {
+    public struct Relays: Codable, Equatable, Sendable {
       /// The dehumidification stage-1 relay topic.
       public var dehumdification1: String
 
@@ -206,7 +206,7 @@ public struct Topics: Codable, Equatable {
   }
 
   /// A container for commands topics that the application can publish to.
-  public struct Commands: Codable, Equatable {
+  public struct Commands: Codable, Equatable, Sendable {
     /// The relay command topics.
     public var relays: Relays
 
@@ -219,7 +219,7 @@ public struct Topics: Codable, Equatable {
     }
 
     /// A container for relay command topics used by the application.
-    public struct Relays: Codable, Equatable {
+    public struct Relays: Codable, Equatable, Sendable {
       /// The dehumidification stage-1 relay topic.
       public var dehumidification1: String
 

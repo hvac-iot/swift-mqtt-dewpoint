@@ -1,5 +1,5 @@
 import Foundation
-import Psychrometrics
+@preconcurrency import Psychrometrics
 
 // TODO: Remove
 // TODO: Make this a struct, then create a Store class that holds the state??

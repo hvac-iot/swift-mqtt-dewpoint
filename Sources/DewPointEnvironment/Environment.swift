@@ -5,7 +5,7 @@ import MQTTNIO
 
 // TODO: Remove
 
-public struct DewPointEnvironment {
+public struct DewPointEnvironment: Sendable {
 
   public var envVars: EnvVars
   public var mqttClient: MQTTNIO.MQTTClient

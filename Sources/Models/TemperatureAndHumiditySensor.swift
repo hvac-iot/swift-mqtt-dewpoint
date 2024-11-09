@@ -1,9 +1,9 @@
-import Psychrometrics
+@preconcurrency import Psychrometrics
 
 /// Represents a temperature and humidity sensor that can be used to derive
 /// the dew-point temperature and enthalpy values.
 ///
-public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable {
+public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable, @unchecked Sendable {
 
   /// The identifier of the sensor, same as the location.
   public var id: Location { location }

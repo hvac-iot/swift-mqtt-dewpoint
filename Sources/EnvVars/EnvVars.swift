@@ -6,7 +6,7 @@ import Foundation
 /// they can be loaded from the shell environment, or from a file located in the root directory.
 ///
 /// This allows us to keep sensitve settings out of the repository.
-public struct EnvVars: Codable, Equatable {
+public struct EnvVars: Codable, Equatable, Sendable {
 
   /// The current app environment.
   public var appEnv: AppEnv
@@ -62,7 +62,7 @@ public struct EnvVars: Codable, Equatable {
   }
 
   /// Represents the different app environments.
-  public enum AppEnv: String, Codable {
+  public enum AppEnv: String, Codable, Sendable {
     case development
     case production
     case staging

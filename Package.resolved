@@ -1,13 +1,13 @@
 {
-  "originHash" : "869c04e4de5c59d3c7c00851dffa2bfde39aa29dc5be3cbbb759ad950fffd706",
+  "originHash" : "e3e70d8b34d7f35b238e03af18c08ca712051332cf3e429ae1c0ac2823ca2018",
   "pins" : [
     {
       "identity" : "mqtt-nio",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-server-community/mqtt-nio.git",
       "state" : {
-        "revision" : "ca8af7a30c4690456ce7de276cd0f037489ba707",
-        "version" : "2.5.3"
+        "revision" : "267b83ab5690d463ff00585a4fd6dc54b698e1d2",
+        "version" : "2.11.0"
       }
     },
     {
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "5c8bd186f48c16af0775972700626f0b74588278",
         "version" : "1.0.2"
+      }
+    },
+    {
+      "identity" : "swift-atomics",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-atomics.git",
+      "state" : {
+        "revision" : "cd142fd2f64be2100422d658e7411e39489da985",
+        "version" : "1.2.0"
       }
     },
     {
@@ -42,8 +51,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio",
       "state" : {
-        "revision" : "6aa9347d9bc5bbfe6a84983aec955c17ffea96ef",
-        "version" : "2.33.0"
+        "revision" : "914081701062b11e3bb9e21accc379822621995e",
+        "version" : "2.76.1"
       }
     },
     {
@@ -69,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-psychrometrics/swift-psychrometrics",
       "state" : {
-        "revision" : "03573545c3750b406921eb22a9575c8062beef88",
-        "version" : "0.1.2"
+        "revision" : "158b9b12ecd14d36381f5bab8701c4e8eee2d011",
+        "version" : "0.1.0"
       }
     },
     {
@@ -80,6 +89,15 @@
       "state" : {
         "revision" : "f70b838872863396a25694d8b19fe58bcd0b7903",
         "version" : "2.6.2"
+      }
+    },
+    {
+      "identity" : "swift-system",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-system.git",
+      "state" : {
+        "revision" : "c8a44d836fe7913603e246acab7c528c2e780168",
+        "version" : "1.4.0"
       }
     }
   ],
