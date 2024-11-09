@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
   name: "dewPoint-controller",
   platforms: [
-    .macOS(.v12)
+    .macOS(.v14)
   ],
   products: [
     .executable(name: "dewPoint-controller", targets: ["dewPoint-controller"]),
@@ -14,12 +14,13 @@ let package = Package(
     .library(name: "EnvVars", targets: ["EnvVars"]),
     .library(name: "Models", targets: ["Models"]),
     .library(name: "Client", targets: ["Client"]),
-    .library(name: "ClientLive", targets: ["ClientLive"]),
+    .library(name: "ClientLive", targets: ["ClientLive"])
   ],
   dependencies: [
     .package(url: "https://github.com/swift-server-community/mqtt-nio.git", from: "2.0.0"),
     .package(url: "https://github.com/apple/swift-nio", from: "2.0.0"),
-    .package(url: "https://github.com/swift-psychrometrics/swift-psychrometrics", from: "0.1.0")
+    .package(url: "https://github.com/swift-psychrometrics/swift-psychrometrics", from: "0.1.0"),
+    .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.3.0")
   ],
   targets: [
     .executableTarget(
@@ -53,7 +54,7 @@ let package = Package(
         "EnvVars",
         "Client",
         "Models",
-        .product(name: "MQTTNIO", package: "mqtt-nio"),
+        .product(name: "MQTTNIO", package: "mqtt-nio")
       ]
     ),
     .target(
@@ -63,7 +64,7 @@ let package = Package(
     .target(
       name: "Models",
       dependencies: [
-        .product(name: "Psychrometrics", package: "swift-psychrometrics"),
+        .product(name: "Psychrometrics", package: "swift-psychrometrics")
       ]
     ),
     .target(
@@ -80,7 +81,8 @@ let package = Package(
       dependencies: [
         "Client",
         "EnvVars",
-        .product(name: "MQTTNIO", package: "mqtt-nio")
+        .product(name: "MQTTNIO", package: "mqtt-nio"),
+        .product(name: "ServiceLifecycle", package: "swift-service-lifecycle")
       ]
     ),
     .testTarget(
@@ -95,6 +97,6 @@ let package = Package(
       dependencies: [
         "Models"
       ]
-    ),
+    )
   ]
 )

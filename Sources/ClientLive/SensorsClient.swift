@@ -4,6 +4,7 @@ import Models
 import MQTTNIO
 import NIO
 import Psychrometrics
+import ServiceLifecycle
 
 // TODO: Pass in eventLoopGroup and MQTTClient.
 public actor SensorsClient {
@@ -65,14 +66,22 @@ public actor SensorsClient {
   }
 
   public func start() async throws {
-    do {
-      try await subscribeToSensors()
-      try await addSensorListeners()
-      logger.debug("Begin listening to sensors...")
-    } catch {
-      logger.trace("Error:\n\(error)")
-      throw error
+    await withGracefulShutdownHandler {
+      await withThrowingTaskGroup(of: Void.self) { group in
+        group.addTask { try await self.subscribeToSensors() }
+        group.addTask { try await self.addSensorListeners() }
+      }
+    } onGracefulShutdown: {
+      Task { await self.shutdown() }
     }
+//     do {
+//       try await subscribeToSensors()
+//       try await addSensorListeners()
+//       logger.debug("Begin listening to sensors...")
+//     } catch {
+//       logger.trace("Error:\n(error)")
+//       throw error
+//     }
   }
 
   public func shutdown() async {
@@ -85,6 +94,48 @@ public actor SensorsClient {
   func subscribeToSensors(qos: MQTTQoS = .exactlyOnce) async throws {
     for sensor in sensors {
       try await client.subscribeToSensor(sensor, qos: qos)
+    }
+  }
+
+  private func _addSensorListeners(qos _: MQTTQoS = .exactlyOnce) async throws {
+    // try await withThrowingDiscardingTaskGroup { group in
+    // group.addTask { try await self.subscribeToSensors(qos: qos) }
+
+    for await result in client.createPublishListener() {
+      switch result {
+      case let .failure(error):
+        logger.trace("Error:\n\(error)")
+      case let .success(value):
+        let topic = value.topicName
+        logger.trace("Received new value for topic: \(topic)")
+        if topic.contains("temperature") {
+          // do something.
+          var buffer = value.payload
+          guard let temperature = Temperature(buffer: &buffer) else {
+            logger.trace("Decoding error for topic: \(topic)")
+            throw DecodingError()
+          }
+          try sensors.update(topic: topic, keyPath: \.temperature, with: temperature)
+          // group.addTask {
+          Task {
+            try await self.publishUpdates()
+          }
+
+        } else if topic.contains("humidity") {
+          var buffer = value.payload
+          // Decode and update the temperature value
+          guard let humidity = RelativeHumidity(buffer: &buffer) else {
+            logger.debug("Failed to decode humidity from buffer: \(buffer)")
+            throw DecodingError()
+          }
+          try sensors.update(topic: topic, keyPath: \.humidity, with: humidity)
+          //      group.addTask {
+          Task {
+            try await self.publishUpdates()
+          }
+        }
+        //   }
+      }
     }
   }
 
@@ -138,7 +189,7 @@ public actor SensorsClient {
     )
   }
 
-  func publishUpdates() async throws {
+  private func publishUpdates() async throws {
     for sensor in sensors.filter(\.needsProcessed) {
       try await publish(double: sensor.dewPoint?.rawValue, to: sensor.topics.dewPoint)
       try await publish(double: sensor.enthalpy?.rawValue, to: sensor.topics.enthalpy)
