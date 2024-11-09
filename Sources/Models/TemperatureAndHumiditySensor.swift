@@ -3,6 +3,7 @@
 /// Represents a temperature and humidity sensor that can be used to derive
 /// the dew-point temperature and enthalpy values.
 ///
+/// > Note: Temperature values are received in `celsius`.
 public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable, @unchecked Sendable {
 
   /// The identifier of the sensor, same as the location.
@@ -25,9 +26,6 @@ public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable, @
   /// The topics to listen for updated sensor values.
   public let topics: Topics
 
-  /// The psychrometric units of the sensor.
-  public let units: PsychrometricEnvironment.Units
-
   /// Create a new temperature and humidity sensor.
   ///
   /// - Parameters:
@@ -36,21 +34,18 @@ public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable, @
   ///   - temperature: The current temperature value of the sensor.
   ///   - humidity: The current relative humidity value of the sensor.
   ///   - needsProcessed: If the sensor needs to be processed.
-  ///   - units: The unit of measure for the sensor.
   public init(
     location: Location,
     altitude: Length = .feet(800.0),
     temperature: Temperature? = nil,
     humidity: RelativeHumidity? = nil,
     needsProcessed: Bool = false,
-    units: PsychrometricEnvironment.Units = .imperial,
     topics: Topics? = nil
   ) {
     self.altitude = altitude
     self.location = location
     self._temperature = TrackedChanges(wrappedValue: temperature, needsProcessed: needsProcessed)
     self._humidity = TrackedChanges(wrappedValue: humidity, needsProcessed: needsProcessed)
-    self.units = units
     self.topics = topics ?? .init(location: location)
   }
 
@@ -61,7 +56,7 @@ public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable, @
           !temperature.rawValue.isNaN,
           !humidity.rawValue.isNaN
     else { return nil }
-    return .init(dryBulb: temperature, humidity: humidity, units: units)
+    return .init(dryBulb: temperature, humidity: humidity)
   }
 
   /// The calculated enthalpy of the sensor.
@@ -71,7 +66,7 @@ public struct TemperatureAndHumiditySensor: Equatable, Hashable, Identifiable, @
           !temperature.rawValue.isNaN,
           !humidity.rawValue.isNaN
     else { return nil }
-    return .init(dryBulb: temperature, humidity: humidity, altitude: altitude, units: units)
+    return .init(dryBulb: temperature, humidity: humidity, altitude: altitude)
   }
 
   /// Check whether any of the sensor values have changed and need processed.

@@ -2,6 +2,10 @@
 
 import PackageDescription
 
+let swiftSettings: [SwiftSetting] = [
+  .enableExperimentalFeature("StrictConcurrency")
+]
+
 let package = Package(
   name: "dewPoint-controller",
   platforms: [
@@ -47,7 +51,8 @@ let package = Package(
         "Models",
         .product(name: "MQTTNIO", package: "mqtt-nio"),
         .product(name: "NIO", package: "swift-nio")
-      ]
+      ],
+      swiftSettings: swiftSettings
     ),
     .target(
       name: "DewPointEnvironment",
@@ -56,17 +61,20 @@ let package = Package(
         "Client",
         "Models",
         .product(name: "MQTTNIO", package: "mqtt-nio")
-      ]
+      ],
+      swiftSettings: swiftSettings
     ),
     .target(
       name: "EnvVars",
-      dependencies: []
+      dependencies: [],
+      swiftSettings: swiftSettings
     ),
     .target(
       name: "Models",
       dependencies: [
         .product(name: "Psychrometrics", package: "swift-psychrometrics")
-      ]
+      ],
+      swiftSettings: swiftSettings
     ),
     .target(
       name: "Client",
@@ -75,7 +83,8 @@ let package = Package(
         .product(name: "CoreUnitTypes", package: "swift-psychrometrics"),
         .product(name: "NIO", package: "swift-nio"),
         .product(name: "Psychrometrics", package: "swift-psychrometrics")
-      ]
+      ],
+      swiftSettings: swiftSettings
     ),
     .target(
       name: "ClientLive",
@@ -84,7 +93,8 @@ let package = Package(
         "EnvVars",
         .product(name: "MQTTNIO", package: "mqtt-nio"),
         .product(name: "ServiceLifecycle", package: "swift-service-lifecycle")
-      ]
+      ],
+      swiftSettings: swiftSettings
     ),
     .testTarget(
       name: "ClientTests",
@@ -94,10 +104,13 @@ let package = Package(
       ]
     ),
     .target(
-      name: "TopicsLive",
+      name: "MQTTConnectionService",
       dependencies: [
-        "Models"
-      ]
+        "EnvVars",
+        .product(name: "MQTTNIO", package: "mqtt-nio"),
+        .product(name: "ServiceLifecycle", package: "swift-service-lifecycle")
+      ],
+      swiftSettings: swiftSettings
     ),
     .target(
       name: "SensorsService",
@@ -105,7 +118,8 @@ let package = Package(
         "Models",
         .product(name: "MQTTNIO", package: "mqtt-nio"),
         .product(name: "ServiceLifecycle", package: "swift-service-lifecycle")
-      ]
+      ],
+      swiftSettings: swiftSettings
     ),
     .testTarget(
       name: "SensorsServiceTests",
@@ -114,6 +128,13 @@ let package = Package(
         // TODO: Remove.
         "ClientLive"
       ]
+    ),
+    .target(
+      name: "TopicsLive",
+      dependencies: [
+        "Models"
+      ],
+      swiftSettings: swiftSettings
     )
   ]
 )

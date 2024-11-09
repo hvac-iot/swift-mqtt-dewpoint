@@ -1,6 +1,6 @@
 import Foundation
 import Logging
-@preconcurrency import Models
+import Models
 @preconcurrency import MQTTNIO
 import NIO
 import Psychrometrics
@@ -102,12 +102,11 @@ public actor SensorsService: Service {
 // MARK: - Errors
 
 struct DecodingError: Error {}
+struct MQTTClientNotConnected: Error {}
 struct NotFoundError: Error {}
 struct SensorExists: Error {}
 
 // MARK: - Helpers
-
-struct MQTTClientNotConnected: Error {}
 
 private extension TemperatureAndHumiditySensor.Topics {
   func contains(_ topic: String) -> Bool {
