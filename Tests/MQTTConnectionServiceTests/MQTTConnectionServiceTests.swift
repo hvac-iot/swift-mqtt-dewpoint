@@ -1,8 +1,9 @@
 import EnvVars
 import Logging
-import MQTTConnectionService
+@testable import MQTTConnectionService
 import MQTTNIO
 import NIO
+import ServiceLifecycle
 import ServiceLifecycleTestKit
 import XCTest
 
@@ -12,22 +13,19 @@ final class MQTTConnectionServiceTests: XCTestCase {
 
   static let logger: Logger = {
     var logger = Logger(label: "AsyncClientTests")
-    logger.logLevel = .debug
+    logger.logLevel = .trace
     return logger
   }()
 
   func testGracefulShutdownWorks() async throws {
-    let client = createClient(identifier: "testGracefulShutdown")
-
     try await testGracefulShutdown { trigger in
+      let client = createClient(identifier: "testGracefulShutdown")
       let service = MQTTConnectionService(client: client)
       try await service.run()
+      try await Task.sleep(for: .seconds(1))
+      XCTAssert(client.isActive())
       trigger.triggerGracefulShutdown()
     }
-
-    try await Task.sleep(for: .seconds(1))
-
-    XCTAssertFalse(client.isActive())
   }
 
   func createClient(identifier: String) -> MQTTClient {

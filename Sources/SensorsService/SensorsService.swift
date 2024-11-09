@@ -19,6 +19,11 @@ public actor SensorsService: Service {
     self.sensors = sensors
   }
 
+  /// The entry-point of the service.
+  ///
+  /// This method is called to start the service and begin
+  /// listening for sensor value changes then publishing the dew-point
+  /// and enthalpy values of the sensors.
   public func run() async throws {
     guard client.isActive() else {
       throw MQTTClientNotConnected()
