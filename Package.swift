@@ -19,6 +19,7 @@ let package = Package(
     .library(name: "Models", targets: ["Models"]),
     .library(name: "Client", targets: ["Client"]),
     .library(name: "ClientLive", targets: ["ClientLive"]),
+    .library(name: "MQTTConnectionService", targets: ["MQTTConnectionService"]),
     .library(name: "SensorsService", targets: ["SensorsService"])
   ],
   dependencies: [
@@ -111,6 +112,13 @@ let package = Package(
         .product(name: "ServiceLifecycle", package: "swift-service-lifecycle")
       ],
       swiftSettings: swiftSettings
+    ),
+    .testTarget(
+      name: "MQTTConnectionServiceTests",
+      dependencies: [
+        "MQTTConnectionService",
+        .product(name: "ServiceLifecycleTestKit", package: "swift-service-lifecycle")
+      ]
     ),
     .target(
       name: "SensorsService",

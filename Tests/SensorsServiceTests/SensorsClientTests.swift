@@ -39,7 +39,7 @@ final class SensorsClientTests: XCTestCase {
   func testSensorService() async throws {
     let client = createClient(identifier: "testSensorService")
     let mqtt = await client.client
-    let sensor = TemperatureAndHumiditySensor(location: .mixedAir, units: .metric)
+    let sensor = TemperatureAndHumiditySensor(location: .mixedAir)
     let publishInfo = PublishInfoContainer(topicFilters: [
       sensor.topics.dewPoint,
       sensor.topics.enthalpy
@@ -99,7 +99,7 @@ final class SensorsClientTests: XCTestCase {
   func testSensorCapturesPublishedState() async throws {
     let client = createClient(identifier: "testSensorCapturesPublishedState")
     let mqtt = await client.client
-    let sensor = TemperatureAndHumiditySensor(location: .mixedAir, units: .metric)
+    let sensor = TemperatureAndHumiditySensor(location: .mixedAir)
     let publishInfo = PublishInfoContainer(topicFilters: [
       sensor.topics.dewPoint,
       sensor.topics.enthalpy
