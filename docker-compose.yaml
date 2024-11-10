@@ -5,6 +5,17 @@ services:
     restart: unless-stopped
     env_file: .env
 
+  local:
+    container_name: local-server
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    depends_on:
+      - mosquitto
+    environment:
+      - MOSQUITTO_SERVER=mosquitto
+
   test:
     build:
       context: .

@@ -3,7 +3,8 @@
 import PackageDescription
 
 let swiftSettings: [SwiftSetting] = [
-  .enableExperimentalFeature("StrictConcurrency")
+  .enableExperimentalFeature("StrictConcurrency"),
+  .enableUpcomingFeature("InferSendableCaptures")
 ]
 
 let package = Package(
@@ -21,6 +22,7 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/swift-server-community/mqtt-nio.git", from: "2.0.0"),
     .package(url: "https://github.com/apple/swift-nio", from: "2.0.0"),
+    .package(url: "https://github.com/apple/swift-log", from: "1.6.0"),
     .package(url: "https://github.com/swift-psychrometrics/swift-psychrometrics", exact: "0.2.3"),
     .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.3.0")
   ],
@@ -28,9 +30,12 @@ let package = Package(
     .executableTarget(
       name: "dewPoint-controller",
       dependencies: [
-        "Bootstrap",
+        "Models",
+        "MQTTConnectionService",
+        "SensorsService",
         .product(name: "MQTTNIO", package: "mqtt-nio"),
-        .product(name: "NIO", package: "swift-nio")
+        .product(name: "NIO", package: "swift-nio"),
+        .product(name: "PsychrometricClientLive", package: "swift-psychrometrics")
       ]
     ),
     .testTarget(
@@ -49,6 +54,7 @@ let package = Package(
     .target(
       name: "Models",
       dependencies: [
+        .product(name: "Logging", package: "swift-log"),
         .product(name: "PsychrometricClient", package: "swift-psychrometrics")
       ],
       swiftSettings: swiftSettings
@@ -73,6 +79,7 @@ let package = Package(
       name: "SensorsService",
       dependencies: [
         "Models",
+        "MQTTConnectionService",
         .product(name: "MQTTNIO", package: "mqtt-nio"),
         .product(name: "ServiceLifecycle", package: "swift-service-lifecycle")
       ],

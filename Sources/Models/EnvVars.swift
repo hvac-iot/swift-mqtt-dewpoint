@@ -1,4 +1,5 @@
 import Foundation
+import Logging
 
 /// Holds common settings for connecting to your MQTT broker.  The default values can be used,
 /// they can be loaded from the shell environment, or from a file located in the root directory.
