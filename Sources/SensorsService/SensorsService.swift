@@ -12,9 +12,9 @@ import ServiceLifecycle
 @DependencyClient
 public struct SensorsClient: Sendable {
 
-  public var listen: @Sendable (_ topics: [String]) async throws -> AsyncStream<MQTTPublishInfo>
+  public var listen: @Sendable ([String]) async throws -> AsyncStream<MQTTPublishInfo>
   public var logger: Logger?
-  public var publish: @Sendable (_ value: Double, _ topic: String) async throws -> Void
+  public var publish: @Sendable (Double, String) async throws -> Void
   public var shutdown: @Sendable () -> Void = {}
 
   public func listen(to topics: [String]) async throws -> AsyncStream<MQTTPublishInfo> {
@@ -45,7 +45,9 @@ public actor SensorsService2: Service {
 
   private var sensors: [TemperatureAndHumiditySensor]
 
-  public init(sensors: [TemperatureAndHumiditySensor]) {
+  public init(
+    sensors: [TemperatureAndHumiditySensor]
+  ) {
     self.sensors = sensors
   }
 

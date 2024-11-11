@@ -143,7 +143,12 @@ final class SensorsClientTests: XCTestCase {
     let capturedValues = CapturedValues()
 
     try await withDependencies {
-      $0.sensorsClient = .testing { value, topic in
+      $0.sensorsClient = .testing(
+        yielding: [
+          (value: 76, to: "not-listening"),
+          (value: 75, to: "test")
+        ]
+      ) { value, topic in
         capturedValues.values.append((value, topic))
       } captureShutdownEvent: {
         capturedValues.didShutdown = $0
@@ -151,18 +156,21 @@ final class SensorsClientTests: XCTestCase {
     } operation: {
       @Dependency(\.sensorsClient) var client
       let stream = try await client.listen(to: ["test"])
+
       for await value in stream {
         var buffer = value.payload
         guard let double = Double(buffer: &buffer) else {
           XCTFail("Failed to decode double")
           return
         }
+
         XCTAssertEqual(double, 75)
         XCTAssertEqual(value.topicName, "test")
         try await client.publish(26, to: "publish")
         try await Task.sleep(for: .milliseconds(100))
         client.shutdown()
       }
+
       XCTAssertEqual(capturedValues.values.count, 1)
       XCTAssertEqual(capturedValues.values.first?.value, 26)
       XCTAssertEqual(capturedValues.values.first?.topic, "publish")
@@ -253,6 +261,7 @@ class PublishInfoContainer {
 extension SensorsClient {
 
   static func testing(
+    yielding: [(value: Double, to: String)],
     capturePublishedValues: @escaping (Double, String) -> Void,
     captureShutdownEvent: @escaping (Bool) -> Void
   ) -> Self {
@@ -261,18 +270,17 @@ extension SensorsClient {
 
     return .init(
       listen: { topics in
-        guard let topic = topics.randomElement() else {
-          throw TopicNotFoundError()
-        }
-        continuation.yield(
-          MQTTPublishInfo(
-            qos: .atLeastOnce,
-            retain: true,
-            topicName: topic,
-            payload: ByteBuffer(string: "75"),
-            properties: MQTTProperties()
+        for (value, topic) in yielding where topics.contains(topic) {
+          continuation.yield(
+            MQTTPublishInfo(
+              qos: .atLeastOnce,
+              retain: true,
+              topicName: topic,
+              payload: ByteBuffer(string: "\(value)"),
+              properties: MQTTProperties()
+            )
           )
-        )
+        }
         return stream
       },
       logger: logger,
