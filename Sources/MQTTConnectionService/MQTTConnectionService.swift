@@ -90,7 +90,6 @@ public actor MQTTConnectionService: Service {
     logger.debug("Begin shutting down MQTT broker connection.")
     client.removeCloseListener(named: "\(Self.self)")
     internalEventStream.stop()
-    // continuation.yield(.shuttingDown)
     _ = client.disconnect()
     try? client.syncShutdownGracefully()
     continuation.finish()

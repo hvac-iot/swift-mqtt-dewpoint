@@ -69,67 +69,105 @@ final class SensorsClientTests: XCTestCase {
 //     await client.shutdown()
 //   }
 
-  func testSensorService() async throws {
-    let mqtt = createClient(identifier: "testSensorService")
-    // let mqtt = await client.client
-    let sensor = TemperatureAndHumiditySensor(location: .mixedAir)
-    let publishInfo = PublishInfoContainer(topicFilters: [
-      sensor.topics.dewPoint,
-      sensor.topics.enthalpy
-    ])
-    let service = SensorsService(client: mqtt, sensors: [sensor])
+//   func testSensorService() async throws {
+//     let mqtt = createClient(identifier: "testSensorService")
+//     // let mqtt = await client.client
+//     let sensor = TemperatureAndHumiditySensor(location: .mixedAir)
+//     let publishInfo = PublishInfoContainer(topicFilters: [
+//       sensor.topics.dewPoint,
+//       sensor.topics.enthalpy
+//     ])
+//     let service = SensorsService(client: mqtt, sensors: [sensor])
+//
+//     // fix to connect the mqtt client.
+//     try await mqtt.connect()
+//     let task = Task { try await service.run() }
+//
+//     _ = try await mqtt.subscribe(to: [
+//       MQTTSubscribeInfo(topicFilter: sensor.topics.dewPoint, qos: .exactlyOnce),
+//       MQTTSubscribeInfo(topicFilter: sensor.topics.enthalpy, qos: .exactlyOnce)
+//     ])
+//
+//     let listener = mqtt.createPublishListener()
+//     Task {
+//       for await result in listener {
+//         switch result {
+//         case let .failure(error):
+//           XCTFail("\(error)")
+//         case let .success(value):
+//           await publishInfo.addPublishInfo(value)
+//         }
+//       }
+//     }
+//
+//     try await mqtt.publish(
+//       to: sensor.topics.temperature,
+//       payload: ByteBufferAllocator().buffer(string: "75.123"),
+//       qos: MQTTQoS.exactlyOnce,
+//       retain: true
+//     )
+//
+//     try await Task.sleep(for: .seconds(1))
+//
+//     // XCTAssert(client.sensors.first!.needsProcessed)
+  // //     let firstSensor = await client.sensors.first!
+  // //     XCTAssertEqual(firstSensor.temperature, .init(75.123, units: .celsius))
+//
+//     try await mqtt.publish(
+//       to: sensor.topics.humidity,
+//       payload: ByteBufferAllocator().buffer(string: "50"),
+//       qos: MQTTQoS.exactlyOnce,
+//       retain: true
+//     )
+//
+//     try await Task.sleep(for: .seconds(1))
+//
+//     // not working for some reason
+//     // XCTAssertEqual(publishInfo.info.count, 2)
+//
+//     XCTAssert(publishInfo.info.count > 1)
+//
+//     // fix to shutdown the mqtt client.
+//     task.cancel()
+//     try await mqtt.shutdown()
+//   }
 
-    // fix to connect the mqtt client.
-    try await mqtt.connect()
-    let task = Task { try await service.run() }
+  func testCapturingSensorClient() async throws {
+    class CapturedValues {
+      var values = [(value: Double, topic: String)]()
+      var didShutdown = false
 
-    _ = try await mqtt.subscribe(to: [
-      MQTTSubscribeInfo(topicFilter: sensor.topics.dewPoint, qos: .exactlyOnce),
-      MQTTSubscribeInfo(topicFilter: sensor.topics.enthalpy, qos: .exactlyOnce)
-    ])
-
-    let listener = mqtt.createPublishListener()
-    Task {
-      for await result in listener {
-        switch result {
-        case let .failure(error):
-          XCTFail("\(error)")
-        case let .success(value):
-          await publishInfo.addPublishInfo(value)
-        }
-      }
+      init() {}
     }
 
-    try await mqtt.publish(
-      to: sensor.topics.temperature,
-      payload: ByteBufferAllocator().buffer(string: "75.123"),
-      qos: MQTTQoS.exactlyOnce,
-      retain: true
-    )
+    let capturedValues = CapturedValues()
 
-    try await Task.sleep(for: .seconds(1))
-
-    // XCTAssert(client.sensors.first!.needsProcessed)
-//     let firstSensor = await client.sensors.first!
-//     XCTAssertEqual(firstSensor.temperature, .init(75.123, units: .celsius))
-
-    try await mqtt.publish(
-      to: sensor.topics.humidity,
-      payload: ByteBufferAllocator().buffer(string: "50"),
-      qos: MQTTQoS.exactlyOnce,
-      retain: true
-    )
-
-    try await Task.sleep(for: .seconds(1))
-
-    // not working for some reason
-    // XCTAssertEqual(publishInfo.info.count, 2)
-
-    XCTAssert(publishInfo.info.count > 1)
-
-    // fix to shutdown the mqtt client.
-    task.cancel()
-    try await mqtt.shutdown()
+    try await withDependencies {
+      $0.sensorsClient = .testing { value, topic in
+        capturedValues.values.append((value, topic))
+      } captureShutdownEvent: {
+        capturedValues.didShutdown = $0
+      }
+    } operation: {
+      @Dependency(\.sensorsClient) var client
+      let stream = try await client.listen(to: ["test"])
+      for await value in stream {
+        var buffer = value.payload
+        guard let double = Double(buffer: &buffer) else {
+          XCTFail("Failed to decode double")
+          return
+        }
+        XCTAssertEqual(double, 75)
+        XCTAssertEqual(value.topicName, "test")
+        try await client.publish(26, to: "publish")
+        try await Task.sleep(for: .milliseconds(100))
+        client.shutdown()
+      }
+      XCTAssertEqual(capturedValues.values.count, 1)
+      XCTAssertEqual(capturedValues.values.first?.value, 26)
+      XCTAssertEqual(capturedValues.values.first?.topic, "publish")
+      XCTAssertTrue(capturedValues.didShutdown)
+    }
   }
 
 //   func testSensorCapturesPublishedState() async throws {
@@ -211,3 +249,42 @@ class PublishInfoContainer {
     }
   }
 }
+
+extension SensorsClient {
+
+  static func testing(
+    capturePublishedValues: @escaping (Double, String) -> Void,
+    captureShutdownEvent: @escaping (Bool) -> Void
+  ) -> Self {
+    let (stream, continuation) = AsyncStream.makeStream(of: MQTTPublishInfo.self)
+    let logger = Logger(label: "\(Self.self).testing")
+
+    return .init(
+      listen: { topics in
+        guard let topic = topics.randomElement() else {
+          throw TopicNotFoundError()
+        }
+        continuation.yield(
+          MQTTPublishInfo(
+            qos: .atLeastOnce,
+            retain: true,
+            topicName: topic,
+            payload: ByteBuffer(string: "75"),
+            properties: MQTTProperties()
+          )
+        )
+        return stream
+      },
+      logger: logger,
+      publish: { value, topic in
+        capturePublishedValues(value, topic)
+      },
+      shutdown: {
+        captureShutdownEvent(true)
+        continuation.finish()
+      }
+    )
+  }
+}
+
+struct TopicNotFoundError: Error {}

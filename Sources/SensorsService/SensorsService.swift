@@ -1,3 +1,5 @@
+import Dependencies
+import DependenciesMacros
 import Foundation
 import Logging
 import Models
@@ -6,6 +8,129 @@ import MQTTConnectionService
 import NIO
 import PsychrometricClient
 import ServiceLifecycle
+
+@DependencyClient
+public struct SensorsClient: Sendable {
+
+  public var listen: @Sendable (_ topics: [String]) async throws -> AsyncStream<MQTTPublishInfo>
+  public var logger: Logger?
+  public var publish: @Sendable (_ value: Double, _ topic: String) async throws -> Void
+  public var shutdown: @Sendable () -> Void = {}
+
+  public func listen(to topics: [String]) async throws -> AsyncStream<MQTTPublishInfo> {
+    try await listen(topics)
+  }
+
+  public func publish(_ value: Double, to topic: String) async throws {
+    try await publish(value, topic)
+  }
+}
+
+extension SensorsClient: TestDependencyKey {
+  public static var testValue: SensorsClient {
+    Self()
+  }
+}
+
+public extension DependencyValues {
+  var sensorsClient: SensorsClient {
+    get { self[SensorsClient.self] }
+    set { self[SensorsClient.self] = newValue }
+  }
+}
+
+public actor SensorsService2: Service {
+
+  @Dependency(\.sensorsClient) var client
+
+  private var sensors: [TemperatureAndHumiditySensor]
+
+  public init(sensors: [TemperatureAndHumiditySensor]) {
+    self.sensors = sensors
+  }
+
+  public func run() async throws {
+    guard sensors.count > 0 else {
+      throw SensorCountError()
+    }
+
+    let stream = try await client.listen(to: topics)
+
+    do {
+      try await withGracefulShutdownHandler {
+        try await withThrowingDiscardingTaskGroup { group in
+          for await result in stream.cancelOnGracefulShutdown() {
+            group.addTask { try await self.handleResult(result) }
+          }
+        }
+      } onGracefulShutdown: {
+        Task {
+          await self.client.logger?.trace("Received graceful shutdown.")
+          try? await self.publishUpdates()
+          await self.client.shutdown()
+        }
+      }
+    } catch {
+      client.logger?.trace("Error: \(error)")
+      client.shutdown()
+    }
+  }
+
+  private var topics: [String] {
+    sensors.reduce(into: [String]()) { array, sensor in
+      array.append(sensor.topics.temperature)
+      array.append(sensor.topics.humidity)
+    }
+  }
+
+  private func handleResult(_ result: MQTTPublishInfo) async throws {
+    let topic = result.topicName
+    client.logger?.trace("Begin handling result for topic: \(topic)")
+
+    func decode<V: BufferInitalizable>(_: V.Type) -> V? {
+      var buffer = result.payload
+      return V(buffer: &buffer)
+    }
+
+    if topic.contains("temperature") {
+      client.logger?.trace("Begin handling temperature result.")
+      guard let temperature = decode(DryBulb.self) else {
+        client.logger?.trace("Failed to decode temperature: \(result.payload)")
+        throw DecodingError()
+      }
+      client.logger?.trace("Decoded temperature: \(temperature)")
+      try sensors.update(topic: topic, keyPath: \.temperature, with: temperature)
+
+    } else if topic.contains("humidity") {
+      client.logger?.trace("Begin handling humidity result.")
+      guard let humidity = decode(RelativeHumidity.self) else {
+        client.logger?.trace("Failed to decode humidity: \(result.payload)")
+        throw DecodingError()
+      }
+      client.logger?.trace("Decoded humidity: \(humidity)")
+      try sensors.update(topic: topic, keyPath: \.humidity, with: humidity)
+    } else {
+      client.logger?.error("Received unexpected topic, expected topic to contain 'temperature' or 'humidity'!")
+      return
+    }
+
+    try await publishUpdates()
+    client.logger?.trace("Done handling result for topic: \(topic)")
+  }
+
+  private func publish(_ double: Double?, to topic: String) async throws {
+    guard let double else { return }
+    try await client.publish(double, to: topic)
+    client.logger?.trace("Published update to topic: \(topic)")
+  }
+
+  private func publishUpdates() async throws {
+    for sensor in sensors.filter(\.needsProcessed) {
+      try await publish(sensor.dewPoint?.value, to: sensor.topics.dewPoint)
+      try await publish(sensor.enthalpy?.value, to: sensor.topics.enthalpy)
+    }
+  }
+}
 
 public actor SensorsService: Service {
   private var sensors: [TemperatureAndHumiditySensor]
@@ -174,6 +299,7 @@ struct DecodingError: Error {}
 struct MQTTClientNotConnected: Error {}
 struct NotFoundError: Error {}
 struct SensorExists: Error {}
+struct SensorCountError: Error {}
 
 // MARK: - Helpers
 

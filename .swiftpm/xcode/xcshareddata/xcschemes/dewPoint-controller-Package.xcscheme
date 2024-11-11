@@ -146,6 +146,20 @@
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "SensorsService"
+               BuildableName = "SensorsService"
+               BlueprintName = "SensorsService"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -171,6 +185,26 @@
                BlueprintIdentifier = "dewPoint-controllerTests"
                BuildableName = "dewPoint-controllerTests"
                BlueprintName = "dewPoint-controllerTests"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "MQTTConnectionServiceTests"
+               BuildableName = "MQTTConnectionServiceTests"
+               BlueprintName = "MQTTConnectionServiceTests"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "SensorsServiceTests"
+               BuildableName = "SensorsServiceTests"
+               BlueprintName = "SensorsServiceTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>

@@ -14,16 +14,16 @@ let package = Package(
   ],
   products: [
     .executable(name: "dewPoint-controller", targets: ["dewPoint-controller"]),
-    .library(name: "Bootstrap", targets: ["Bootstrap"]),
     .library(name: "Models", targets: ["Models"]),
     .library(name: "MQTTConnectionService", targets: ["MQTTConnectionService"]),
     .library(name: "SensorsService", targets: ["SensorsService"])
   ],
   dependencies: [
-    .package(url: "https://github.com/swift-server-community/mqtt-nio.git", from: "2.0.0"),
     .package(url: "https://github.com/apple/swift-nio", from: "2.0.0"),
     .package(url: "https://github.com/apple/swift-log", from: "1.6.0"),
+    .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.4.1"),
     .package(url: "https://github.com/swift-psychrometrics/swift-psychrometrics", exact: "0.2.3"),
+    .package(url: "https://github.com/swift-server-community/mqtt-nio.git", from: "2.0.0"),
     .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "2.3.0")
   ],
   targets: [
@@ -41,15 +41,6 @@ let package = Package(
     .testTarget(
       name: "dewPoint-controllerTests",
       dependencies: ["dewPoint-controller"]
-    ),
-    .target(
-      name: "Bootstrap",
-      dependencies: [
-        "Models",
-        .product(name: "MQTTNIO", package: "mqtt-nio"),
-        .product(name: "NIO", package: "swift-nio")
-      ],
-      swiftSettings: swiftSettings
     ),
     .target(
       name: "Models",
@@ -80,6 +71,8 @@ let package = Package(
       dependencies: [
         "Models",
         "MQTTConnectionService",
+        .product(name: "Dependencies", package: "swift-dependencies"),
+        .product(name: "DependenciesMacros", package: "swift-dependencies"),
         .product(name: "MQTTNIO", package: "mqtt-nio"),
         .product(name: "ServiceLifecycle", package: "swift-service-lifecycle")
       ],

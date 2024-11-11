@@ -3,7 +3,7 @@ import Models
 import MQTTNIO
 import NIO
 import NIOFoundationCompat
-import SharedModels
+import PsychrometricClient
 
 /// Represents a type that can be initialized by a ``ByteBuffer``.
 protocol BufferInitalizable {
@@ -22,14 +22,6 @@ extension Double: BufferInitalizable {
     self.init(string)
   }
 }
-
-// extension DryBulb: BufferInitalizable {
-//   /// Attempt to create / parse a temperature from a byte buffer.
-//   init?(buffer: inout ByteBuffer) {
-//     guard let value = Double(buffer: &buffer) else { return nil }
-//     self.init(.init(value, units: .celsius))
-//   }
-// }
 
 extension Tagged: BufferInitalizable where RawValue: BufferInitalizable {
   init?(buffer: inout ByteBuffer) {
@@ -51,11 +43,3 @@ extension Temperature<DryAir>: BufferInitalizable {
     self.init(value)
   }
 }
-
-// extension RelativeHumidity: BufferInitalizable {
-//   /// Attempt to create / parse a relative humidity from a byte buffer.
-//   init?(buffer: inout ByteBuffer) {
-//     guard let value = Double(buffer: &buffer) else { return nil }
-//     self.init(value)
-//   }
-// }

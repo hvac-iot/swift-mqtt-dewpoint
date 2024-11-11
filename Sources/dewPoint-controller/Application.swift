@@ -83,7 +83,7 @@ private extension MQTTNIO.MQTTClient {
       eventLoopGroupProvider: .shared(eventLoopGroup),
       logger: logger,
       configuration: .init(
-        version: .v5_0,
+        version: .v3_1_1,
         disablePing: false,
         userName: envVars.userName,
         password: envVars.password
