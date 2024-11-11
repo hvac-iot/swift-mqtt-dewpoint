@@ -157,15 +157,15 @@ final class SensorsClientTests: XCTestCase {
       @Dependency(\.sensorsClient) var client
       let stream = try await client.listen(to: ["test"])
 
-      for await value in stream {
-        var buffer = value.payload
+      for await result in stream {
+        var buffer = result.buffer
         guard let double = Double(buffer: &buffer) else {
           XCTFail("Failed to decode double")
           return
         }
 
         XCTAssertEqual(double, 75)
-        XCTAssertEqual(value.topicName, "test")
+        XCTAssertEqual(result.topic, "test")
         try await client.publish(26, to: "publish")
         try await Task.sleep(for: .milliseconds(100))
         client.shutdown()
@@ -265,20 +265,14 @@ extension SensorsClient {
     capturePublishedValues: @escaping (Double, String) -> Void,
     captureShutdownEvent: @escaping (Bool) -> Void
   ) -> Self {
-    let (stream, continuation) = AsyncStream.makeStream(of: MQTTPublishInfo.self)
+    let (stream, continuation) = AsyncStream.makeStream(of: PublishInfo.self)
     let logger = Logger(label: "\(Self.self).testing")
 
     return .init(
       listen: { topics in
         for (value, topic) in yielding where topics.contains(topic) {
           continuation.yield(
-            MQTTPublishInfo(
-              qos: .atLeastOnce,
-              retain: true,
-              topicName: topic,
-              payload: ByteBuffer(string: "\(value)"),
-              properties: MQTTProperties()
-            )
+            (buffer: ByteBuffer(string: "\(value)"), topic: topic)
           )
         }
         return stream

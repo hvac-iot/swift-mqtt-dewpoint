@@ -1,3 +1,4 @@
+import Dependencies
 import Foundation
 import Logging
 import Models
@@ -5,7 +6,7 @@ import MQTTConnectionService
 import MQTTNIO
 import NIO
 import PsychrometricClientLive
-import SensorsService
+import SensorsClientLive
 import ServiceLifecycle
 
 @main
@@ -32,22 +33,27 @@ struct Application {
     )
 
     let mqttConnection = MQTTConnectionService(client: mqtt)
-    let sensors = SensorsService(
-      client: mqtt,
-      events: { mqttConnection.events },
-      sensors: .live
-    )
+    try await withDependencies {
+      $0.psychrometricClient = PsychrometricClient.liveValue
+      $0.sensorsClient = .live(client: mqtt)
+    } operation: {
+      let sensors = SensorsService(sensors: .live)
 
-    let serviceGroup = ServiceGroup(
-      services: [
-        mqttConnection,
-        sensors
-      ],
-      gracefulShutdownSignals: [.sigterm, .sigint],
-      logger: logger
-    )
+      var serviceGroupConfiguration = ServiceGroupConfiguration(
+        services: [
+          mqttConnection,
+          sensors
+        ],
+        gracefulShutdownSignals: [.sigterm, .sigint],
+        logger: logger
+      )
+      serviceGroupConfiguration.maximumCancellationDuration = .seconds(5)
+      serviceGroupConfiguration.maximumGracefulShutdownDuration = .seconds(10)
 
-    try await serviceGroup.run()
+      let serviceGroup = ServiceGroup(configuration: serviceGroupConfiguration)
+
+      try await serviceGroup.run()
+    }
   }
 }
 

@@ -14,7 +14,7 @@ services:
     depends_on:
       - mosquitto
     environment:
-      - MOSQUITTO_SERVER=mosquitto
+      - MQTT_HOST=mosquitto
 
   test:
     build:

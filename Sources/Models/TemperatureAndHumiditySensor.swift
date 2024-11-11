@@ -129,10 +129,10 @@ public struct TemperatureAndHumiditySensor: Identifiable, Sendable {
         prefix = "\(prefix.dropLast())"
       }
       self.init(
-        dewPoint: "\(prefix)/sensors/\(location.rawValue)_dew_point/state",
-        enthalpy: "\(prefix)/sensors/\(location.rawValue)_enthalpy/state",
-        humidity: "\(prefix)/sensors/\(location.rawValue)_humidity/state",
-        temperature: "\(prefix)/sensors/\(location.rawValue)_temperature/state"
+        dewPoint: "\(prefix)/sensor/\(location.rawValue)_dew_point/state",
+        enthalpy: "\(prefix)/sensor/\(location.rawValue)_enthalpy/state",
+        humidity: "\(prefix)/sensor/\(location.rawValue)_humidity/state",
+        temperature: "\(prefix)/sensor/\(location.rawValue)_temperature/state"
       )
     }
   }

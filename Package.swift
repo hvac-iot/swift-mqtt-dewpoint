@@ -16,6 +16,7 @@ let package = Package(
     .executable(name: "dewPoint-controller", targets: ["dewPoint-controller"]),
     .library(name: "Models", targets: ["Models"]),
     .library(name: "MQTTConnectionService", targets: ["MQTTConnectionService"]),
+    .library(name: "SensorsClientLive", targets: ["SensorsClientLive"]),
     .library(name: "SensorsService", targets: ["SensorsService"])
   ],
   dependencies: [
@@ -33,6 +34,7 @@ let package = Package(
         "Models",
         "MQTTConnectionService",
         "SensorsService",
+        "SensorsClientLive",
         .product(name: "MQTTNIO", package: "mqtt-nio"),
         .product(name: "NIO", package: "swift-nio"),
         .product(name: "PsychrometricClientLive", package: "swift-psychrometrics")
@@ -65,6 +67,15 @@ let package = Package(
         "MQTTConnectionService",
         .product(name: "ServiceLifecycleTestKit", package: "swift-service-lifecycle")
       ]
+    ),
+    .target(
+      name: "SensorsClientLive",
+      dependencies: [
+        "SensorsService",
+        .product(name: "Dependencies", package: "swift-dependencies"),
+        .product(name: "MQTTNIO", package: "mqtt-nio")
+      ],
+      swiftSettings: swiftSettings
     ),
     .target(
       name: "SensorsService",
