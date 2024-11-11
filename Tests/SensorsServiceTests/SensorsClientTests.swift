@@ -12,7 +12,7 @@ final class SensorsClientTests: XCTestCase {
   static let hostname = ProcessInfo.processInfo.environment["MOSQUITTO_SERVER"] ?? "localhost"
 
   static let logger: Logger = {
-    var logger = Logger(label: "AsyncClientTests")
+    var logger = Logger(label: "SensorsClientTests")
     logger.logLevel = .debug
     return logger
   }()

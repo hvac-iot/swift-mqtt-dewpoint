@@ -71,7 +71,7 @@ public actor MQTTConnectionService: Service {
     }
   }
 
-  private nonisolated func shutdown() {
+  nonisolated func shutdown() {
     logger.debug("Begin shutting down MQTT broker connection.")
     client.removeCloseListener(named: name)
     internalEventStream.stop()

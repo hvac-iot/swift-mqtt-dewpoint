@@ -3,7 +3,7 @@
 /// This allows values to only publish changes if they have changed since the
 /// last time they were recieved.
 @propertyWrapper
-public struct TrackedChanges<Value> {
+public struct TrackedChanges<Value: Sendable>: Sendable {
 
   /// The current tracking state.
   private var tracking: TrackingState
@@ -12,7 +12,7 @@ public struct TrackedChanges<Value> {
   private var value: Value
 
   /// Used to check if a new value is equal to an old value.
-  private var isEqual: (Value, Value) -> Bool
+  private var isEqual: @Sendable (Value, Value) -> Bool
 
   /// Access to the underlying property that we are wrapping.
   public var wrappedValue: Value {
@@ -35,7 +35,7 @@ public struct TrackedChanges<Value> {
   public init(
     wrappedValue: Value,
     needsProcessed: Bool = false,
-    isEqual: @escaping (Value, Value) -> Bool
+    isEqual: @escaping @Sendable (Value, Value) -> Bool
   ) {
     self.value = wrappedValue
     self.tracking = needsProcessed ? .needsProcessed : .hasProcessed
@@ -85,7 +85,9 @@ extension TrackedChanges: Equatable where Value: Equatable {
     wrappedValue: Value,
     needsProcessed: Bool = false
   ) {
-    self.init(wrappedValue: wrappedValue, needsProcessed: needsProcessed, isEqual: ==)
+    self.init(wrappedValue: wrappedValue, needsProcessed: needsProcessed) {
+      $0 == $1
+    }
   }
 }
 
@@ -96,5 +98,3 @@ extension TrackedChanges: Hashable where Value: Hashable {
     hasher.combine(needsProcessed)
   }
 }
-
-extension TrackedChanges: Sendable where Value: Sendable {}

@@ -40,10 +40,6 @@ let package = Package(
         .product(name: "PsychrometricClientLive", package: "swift-psychrometrics")
       ]
     ),
-    .testTarget(
-      name: "dewPoint-controllerTests",
-      dependencies: ["dewPoint-controller"]
-    ),
     .target(
       name: "Models",
       dependencies: [

@@ -11,6 +11,7 @@ import ServiceLifecycle
 
 @main
 struct Application {
+
   /// The main entry point of the application.
   static func main() async throws {
     let eventloopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
