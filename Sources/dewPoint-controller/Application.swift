@@ -2,7 +2,7 @@ import Dependencies
 import Foundation
 import Logging
 import Models
-import MQTTConnectionService
+import MQTTConnectionManagerLive
 import MQTTNIO
 import NIO
 import PsychrometricClientLive
@@ -33,11 +33,12 @@ struct Application {
       logger: logger
     )
 
-    let mqttConnection = MQTTConnectionService(client: mqtt)
     try await withDependencies {
-      $0.psychrometricClient = PsychrometricClient.liveValue
+      $0.psychrometricClient = .liveValue
       $0.sensorsClient = .live(client: mqtt)
+      $0.mqttConnectionManager = .live(client: mqtt, logger: logger)
     } operation: {
+      let mqttConnection = MQTTConnectionService(cleanSession: false, logger: logger)
       let sensors = SensorsService(sensors: .live)
 
       var serviceGroupConfiguration = ServiceGroupConfiguration(

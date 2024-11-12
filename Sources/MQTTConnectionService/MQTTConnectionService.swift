@@ -1,123 +1,70 @@
+import Dependencies
+import DependenciesMacros
 import Foundation
 import Logging
 import Models
-import MQTTNIO
-import NIO
 import ServiceLifecycle
 
-/// Manages the MQTT broker connection.
-public actor MQTTConnectionService: Service {
+/// Represents the interface needed for the ``MQTTConnectionService``.
+///
+/// See ``MQTTConnectionManagerLive`` module for live implementation.
+@DependencyClient
+public struct MQTTConnectionManager: Sendable {
 
-  private let cleanSession: Bool
-  private let client: MQTTClient
-  private let internalEventStream: ConnectionStream
-  nonisolated var logger: Logger { client.logger }
-  private let name: String
-
-  public init(
-    cleanSession: Bool = true,
-    client: MQTTClient
-  ) {
-    self.cleanSession = cleanSession
-    self.client = client
-    self.internalEventStream = .init()
-    self.name = UUID().uuidString
-  }
-
-  deinit {
-    self.logger.debug("MQTTConnectionService is gone.")
-    self.internalEventStream.stop()
-  }
-
-  /// The entry-point of the service.
-  ///
-  /// This method connects to the MQTT broker and manages the connection.
-  /// It will attempt to gracefully shutdown the connection upon receiving
-  /// a shutdown signals.
-  public func run() async throws {
-    await withGracefulShutdownHandler {
-      await withDiscardingTaskGroup { group in
-        group.addTask { await self.connect() }
-        group.addTask {
-          await self.internalEventStream.start { self.client.isActive() }
-        }
-        for await event in self.internalEventStream.events.cancelOnGracefulShutdown() {
-          if event == .shuttingDown {
-            break
-          }
-          self.logger.trace("Sending connection event: \(event)")
-        }
-        group.cancelAll()
-      }
-    } onGracefulShutdown: {
-      self.logger.trace("Received graceful shutdown.")
-      self.shutdown()
-    }
-  }
-
-  func connect() async {
-    do {
-      try await client.connect(cleanSession: cleanSession)
-      client.addCloseListener(named: name) { _ in
-        Task {
-          self.logger.debug("Connection closed.")
-          self.logger.debug("Reconnecting...")
-          await self.connect()
-        }
-      }
-      logger.debug("Connection successful.")
-    } catch {
-      logger.trace("Failed to connect: \(error)")
-    }
-  }
-
-  nonisolated func shutdown() {
-    logger.debug("Begin shutting down MQTT broker connection.")
-    client.removeCloseListener(named: name)
-    internalEventStream.stop()
-    _ = client.disconnect()
-    try? client.syncShutdownGracefully()
-    logger.info("MQTT broker connection closed.")
-  }
-
-}
-
-extension MQTTConnectionService {
+  public var connect: @Sendable (_ cleanSession: Bool) async throws -> AsyncStream<Event>
+  public var shutdown: () -> Void
 
   public enum Event: Sendable {
     case connected
     case disconnected
     case shuttingDown
   }
+}
 
-  private actor ConnectionStream: Sendable {
+extension MQTTConnectionManager: TestDependencyKey {
+  public static var testValue: MQTTConnectionManager {
+    Self()
+  }
+}
 
-    private let continuation: AsyncStream<MQTTConnectionService.Event>.Continuation
-    let events: AsyncStream<MQTTConnectionService.Event>
+public extension DependencyValues {
+  var mqttConnectionManager: MQTTConnectionManager {
+    get { self[MQTTConnectionManager.self] }
+    set { self[MQTTConnectionManager.self] = newValue }
+  }
+}
 
-    init() {
-      let (stream, continuation) = AsyncStream.makeStream(of: MQTTConnectionService.Event.self)
-      self.events = stream
-      self.continuation = continuation
-    }
+// MARK: - MQTTConnectionService
 
-    deinit {
-      stop()
-    }
+public actor MQTTConnectionService: Service {
+  @Dependency(\.mqttConnectionManager) var manager
 
-    func start(isActive connectionIsActive: @escaping () -> Bool) async {
-      try? await Task.sleep(for: .seconds(1))
-      let event: MQTTConnectionService.Event = connectionIsActive()
-        ? .connected
-        : .disconnected
+  private let cleanSession: Bool
+  private nonisolated let logger: Logger?
 
-      continuation.yield(event)
-    }
-
-    nonisolated func stop() {
-      continuation.yield(.shuttingDown)
-      continuation.finish()
-    }
+  public init(
+    cleanSession: Bool = false,
+    logger: Logger? = nil
+  ) {
+    self.cleanSession = cleanSession
+    self.logger = logger
   }
 
+  /// The entry-point of the service which starts the connection
+  /// to the MQTT broker and handles graceful shutdown of the
+  /// connection.
+  public func run() async throws {
+    try await withGracefulShutdownHandler {
+      let stream = try await manager.connect(cleanSession)
+      for await event in stream.cancelOnGracefulShutdown() {
+        // We don't really need to do anything with the events, so just logging
+        // for now.  But we need to iterate on an async stream for the service to
+        // continue to run and handle graceful shutdowns.
+        logger?.trace("Received connection event: \(event)")
+      }
+    } onGracefulShutdown: {
+      self.logger?.trace("Received graceful shutdown.")
+      Task { await self.manager.shutdown() }
+    }
+  }
 }
