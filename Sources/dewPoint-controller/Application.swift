@@ -39,7 +39,7 @@ struct Application {
       $0.mqttConnectionManager = .live(client: mqtt, logger: logger)
     } operation: {
       let mqttConnection = MQTTConnectionService(cleanSession: false, logger: logger)
-      let sensors = SensorsService(sensors: .live)
+      let sensors = SensorsService(sensors: .live, logger: logger)
 
       var serviceGroupConfiguration = ServiceGroupConfiguration(
         services: [

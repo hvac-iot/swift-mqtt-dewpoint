@@ -22,9 +22,6 @@ public struct SensorsClient: Sendable {
   /// Start listening for changes to sensor values on the MQTT broker.
   public var listen: @Sendable ([String]) async throws -> AsyncStream<PublishInfo>
 
-  /// A logger to use for the service.
-  public var logger: Logger?
-
   /// Publish dew-point or enthalpy values back to the MQTT broker.
   public var publish: @Sendable (Double, String) async throws -> Void
 
@@ -68,6 +65,8 @@ public actor SensorsService: Service {
 
   private var sensors: [TemperatureAndHumiditySensor]
 
+  private let logger: Logger?
+
   /// Create a new sensors service that listens to the passed in
   /// sensors.
   ///
@@ -76,9 +75,11 @@ public actor SensorsService: Service {
   /// - Parameters:
   ///   - sensors: The sensors to listen for changes to.
   public init(
-    sensors: [TemperatureAndHumiditySensor]
+    sensors: [TemperatureAndHumiditySensor],
+    logger: Logger? = nil
   ) {
     self.sensors = sensors
+    self.logger = logger
   }
 
   /// Start the service with graceful shutdown, which will attempt to publish
@@ -96,7 +97,7 @@ public actor SensorsService: Service {
       }
     } onGracefulShutdown: {
       Task {
-        await self.client.logger?.trace("Received graceful shutdown.")
+        self.logger?.trace("Received graceful shutdown.")
         try? await self.publishUpdates()
         await self.client.shutdown()
       }
@@ -114,7 +115,7 @@ public actor SensorsService: Service {
     do {
       let topic = result.topic
       assert(topics.contains(topic))
-      client.logger?.trace("Begin handling result for topic: \(topic)")
+      logger?.trace("Begin handling result for topic: \(topic)")
 
       func decode<V: BufferInitalizable>(_: V.Type) -> V? {
         var buffer = result.buffer
@@ -122,35 +123,35 @@ public actor SensorsService: Service {
       }
 
       if topic.contains("temperature") {
-        client.logger?.trace("Begin handling temperature result.")
+        logger?.trace("Begin handling temperature result.")
         guard let temperature = decode(DryBulb.self) else {
-          client.logger?.trace("Failed to decode temperature: \(result.buffer)")
+          logger?.trace("Failed to decode temperature: \(result.buffer)")
           throw DecodingError()
         }
-        client.logger?.trace("Decoded temperature: \(temperature)")
+        logger?.trace("Decoded temperature: \(temperature)")
         try sensors.update(topic: topic, keyPath: \.temperature, with: temperature)
 
       } else if topic.contains("humidity") {
-        client.logger?.trace("Begin handling humidity result.")
+        logger?.trace("Begin handling humidity result.")
         guard let humidity = decode(RelativeHumidity.self) else {
-          client.logger?.trace("Failed to decode humidity: \(result.buffer)")
+          logger?.trace("Failed to decode humidity: \(result.buffer)")
           throw DecodingError()
         }
-        client.logger?.trace("Decoded humidity: \(humidity)")
+        logger?.trace("Decoded humidity: \(humidity)")
         try sensors.update(topic: topic, keyPath: \.humidity, with: humidity)
       }
 
       try await publishUpdates()
-      client.logger?.trace("Done handling result for topic: \(topic)")
+      logger?.trace("Done handling result for topic: \(topic)")
     } catch {
-      client.logger?.error("Received error: \(error)")
+      logger?.error("Received error: \(error)")
     }
   }
 
   private func publish(_ double: Double?, to topic: String) async throws {
     guard let double else { return }
     try await client.publish(double, to: topic)
-    client.logger?.trace("Published update to topic: \(topic)")
+    logger?.trace("Published update to topic: \(topic)")
   }
 
   private func publishUpdates() async throws {

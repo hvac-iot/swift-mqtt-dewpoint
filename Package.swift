@@ -8,17 +8,18 @@ let swiftSettings: [SwiftSetting] = [
 ]
 
 let package = Package(
-  name: "dewPoint-controller",
+  name: "dewpoint-controller",
   platforms: [
     .macOS(.v14)
   ],
   products: [
-    .executable(name: "dewPoint-controller", targets: ["dewPoint-controller"]),
+    .executable(name: "dewpoint-controller", targets: ["dewPoint-controller"]),
     .library(name: "Models", targets: ["Models"]),
     .library(name: "MQTTConnectionManagerLive", targets: ["MQTTConnectionManagerLive"]),
     .library(name: "MQTTConnectionService", targets: ["MQTTConnectionService"]),
     .library(name: "SensorsClientLive", targets: ["SensorsClientLive"]),
-    .library(name: "SensorsService", targets: ["SensorsService"])
+    .library(name: "SensorsService", targets: ["SensorsService"]),
+    .library(name: "TopicDependencies", targets: ["TopicDependencies"])
   ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-nio", from: "2.0.0"),
@@ -100,6 +101,15 @@ let package = Package(
         "SensorsService",
         .product(name: "PsychrometricClientLive", package: "swift-psychrometrics")
       ]
+    ),
+    .target(
+      name: "TopicDependencies",
+      dependencies: [
+        .product(name: "Dependencies", package: "swift-dependencies"),
+        .product(name: "DependenciesMacros", package: "swift-dependencies"),
+        .product(name: "MQTTNIO", package: "mqtt-nio")
+      ],
+      swiftSettings: swiftSettings
     )
   ]
 )

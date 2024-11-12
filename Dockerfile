@@ -11,4 +11,4 @@ RUN swift build --enable-test-discovery -c release -Xswiftc -g
 FROM swift:5.10-slim
 WORKDIR /run
 COPY --from=build /build/.build/release/dewPoint-controller /run
-CMD ["/bin/bash", "-xc", "./dewPoint-controller"]
+CMD ["/bin/bash", "-xc", "./dewpoint-controller"]

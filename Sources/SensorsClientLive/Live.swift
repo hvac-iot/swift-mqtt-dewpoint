@@ -20,7 +20,6 @@ public extension SensorsClient {
 
     return .init(
       listen: { try await listener.listen($0) },
-      logger: client.logger,
       publish: { try await listener.publish($0, $1) },
       shutdown: { listener.shutdown() }
     )
