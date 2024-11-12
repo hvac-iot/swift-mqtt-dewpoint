@@ -56,10 +56,11 @@ public struct TemperatureAndHumiditySensor: Identifiable, Sendable {
   public var dewPoint: DewPoint? {
     get async {
       guard let temperature = temperature,
-            let humidity = humidity
+            let humidity = humidity,
+            !temperature.value.isNaN,
+            !humidity.value.isNaN
       else { return nil }
       return try? await psychrometrics.dewPoint(.dryBulb(temperature, relativeHumidity: humidity))
-      // return .init(dryBulb: temperature, humidity: humidity)
     }
   }
 
@@ -67,12 +68,13 @@ public struct TemperatureAndHumiditySensor: Identifiable, Sendable {
   public var enthalpy: EnthalpyOf<MoistAir>? {
     get async {
       guard let temperature = temperature,
-            let humidity = humidity
+            let humidity = humidity,
+            !temperature.value.isNaN,
+            !humidity.value.isNaN
       else { return nil }
       return try? await psychrometrics.enthalpy.moistAir(
         .dryBulb(temperature, relativeHumidity: humidity, altitude: altitude)
       )
-      // return .init(dryBulb: temperature, humidity: humidity, altitude: altitude)
     }
   }
 

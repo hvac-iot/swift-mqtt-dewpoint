@@ -6,15 +6,16 @@ import MQTTConnectionManagerLive
 import MQTTNIO
 import NIO
 import PsychrometricClientLive
-import SensorsClientLive
+import SensorsService
 import ServiceLifecycle
+import TopicDependencies
 
 @main
 struct Application {
 
   /// The main entry point of the application.
   static func main() async throws {
-    let eventloopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    let eventloopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
     var logger = Logger(label: "dewpoint-controller")
     logger.logLevel = .trace
 
@@ -35,7 +36,9 @@ struct Application {
 
     try await withDependencies {
       $0.psychrometricClient = .liveValue
-      $0.sensorsClient = .live(client: mqtt)
+      // $0.sensorsClient = .live(client: mqtt)
+      $0.topicListener = .live(client: mqtt)
+      $0.topicPublisher = .live(client: mqtt)
       $0.mqttConnectionManager = .live(client: mqtt, logger: logger)
     } operation: {
       let mqttConnection = MQTTConnectionService(cleanSession: false, logger: logger)

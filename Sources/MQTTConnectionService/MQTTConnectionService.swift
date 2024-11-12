@@ -28,6 +28,9 @@ extension MQTTConnectionManager: TestDependencyKey {
 }
 
 public extension DependencyValues {
+
+  /// A dependency that is responsible for managing the connection to
+  /// an MQTT broker.
   var mqttConnectionManager: MQTTConnectionManager {
     get { self[MQTTConnectionManager.self] }
     set { self[MQTTConnectionManager.self] = newValue }

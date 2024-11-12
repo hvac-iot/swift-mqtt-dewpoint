@@ -3,56 +3,11 @@ import DependenciesMacros
 import Foundation
 import Logging
 import Models
+import MQTTNIO
 import NIO
 import PsychrometricClient
 import ServiceLifecycle
-
-/// Represents the interface required for the sensor service to operate.
-///
-/// This allows the dependency to be controlled for testing purposes and
-/// not rely on an active MQTT broker connection.
-///
-/// For the live implementation see ``SensorsClientLive`` module.
-///
-@DependencyClient
-public struct SensorsClient: Sendable {
-
-  public typealias PublishInfo = (buffer: ByteBuffer, topic: String)
-
-  /// Start listening for changes to sensor values on the MQTT broker.
-  public var listen: @Sendable ([String]) async throws -> AsyncStream<PublishInfo>
-
-  /// Publish dew-point or enthalpy values back to the MQTT broker.
-  public var publish: @Sendable (Double, String) async throws -> Void
-
-  /// Shutdown the service.
-  public var shutdown: @Sendable () -> Void = {}
-
-  /// Start listening for changes to sensor values on the MQTT broker.
-  public func listen(to topics: [String]) async throws -> AsyncStream<PublishInfo> {
-    try await listen(topics)
-  }
-
-  /// Publish dew-point or enthalpy values back to the MQTT broker.
-  public func publish(_ value: Double, to topic: String) async throws {
-    try await publish(value, topic)
-  }
-}
-
-extension SensorsClient: TestDependencyKey {
-  public static var testValue: SensorsClient {
-    Self()
-  }
-}
-
-public extension DependencyValues {
-  var sensorsClient: SensorsClient {
-    get { self[SensorsClient.self] }
-    set { self[SensorsClient.self] = newValue }
-  }
-}
-
-// MARK: - SensorsService
+import TopicDependencies
 
 /// Service that is responsible for listening to changes of the temperature and humidity
 /// sensors, then publishing back the calculated dew-point temperature and enthalpy for
@@ -61,11 +16,23 @@ public extension DependencyValues {
 ///
 public actor SensorsService: Service {
 
-  @Dependency(\.sensorsClient) var client
+  @Dependency(\.topicListener) var topicListener
+  @Dependency(\.topicPublisher) var topicPublisher
 
-  private var sensors: [TemperatureAndHumiditySensor]
-
+  /// The logger to use for the service.
   private let logger: Logger?
+
+  /// The sensors that we are listening for updates to, so
+  /// that we can calculate the dew-point temperature and enthalpy
+  /// values to publish back to the MQTT broker.
+  var sensors: [TemperatureAndHumiditySensor]
+
+  var topics: [String] {
+    sensors.reduce(into: [String]()) { array, sensor in
+      array.append(sensor.topics.temperature)
+      array.append(sensor.topics.humidity)
+    }
+  }
 
   /// Create a new sensors service that listens to the passed in
   /// sensors.
@@ -74,6 +41,7 @@ public actor SensorsService: Service {
   ///
   /// - Parameters:
   ///   - sensors: The sensors to listen for changes to.
+  ///   - logger: An optional logger to use.
   public init(
     sensors: [TemperatureAndHumiditySensor],
     logger: Logger? = nil
@@ -85,33 +53,50 @@ public actor SensorsService: Service {
   /// Start the service with graceful shutdown, which will attempt to publish
   /// any pending changes to the MQTT broker, upon a shutdown signal.
   public func run() async throws {
-    precondition(sensors.count > 0)
+    precondition(sensors.count > 0, "Sensors should not be empty.")
 
-    let stream = try await client.listen(to: topics)
+    let stream = try await makeStream()
 
     await withGracefulShutdownHandler {
       await withDiscardingTaskGroup { group in
-        for await result in stream {
+        for await result in stream.cancelOnGracefulShutdown() {
+          logger?.trace("Received result for topic: \(result.topic)")
           group.addTask { await self.handleResult(result) }
         }
+        // group.cancelAll()
       }
     } onGracefulShutdown: {
       Task {
         self.logger?.trace("Received graceful shutdown.")
         try? await self.publishUpdates()
-        await self.client.shutdown()
+        await self.topicListener.shutdown()
       }
     }
   }
 
-  private var topics: [String] {
-    sensors.reduce(into: [String]()) { array, sensor in
-      array.append(sensor.topics.temperature)
-      array.append(sensor.topics.humidity)
-    }
+  private func makeStream() async throws -> AsyncStream<(buffer: ByteBuffer, topic: String)> {
+    try await topicListener.listen(to: topics)
+      // ignore errors, so that we continue to listen, but log them
+      // for debugging purposes.
+      .compactMap { result in
+        switch result {
+        case let .failure(error):
+          self.logger?.trace("Received error listening for sensors: \(error)")
+          return nil
+        case let .success(info):
+          return (info.payload, info.topicName)
+        }
+      }
+      // ignore duplicate values, to prevent publishing dew-point and enthalpy
+      // changes to frequently.
+      .removeDuplicates { lhs, rhs in
+        lhs.buffer == rhs.buffer
+          && lhs.topic == rhs.topic
+      }
+      .eraseToStream()
   }
 
-  private func handleResult(_ result: SensorsClient.PublishInfo) async {
+  private func handleResult(_ result: (buffer: ByteBuffer, topic: String)) async {
     do {
       let topic = result.topic
       assert(topics.contains(topic))
@@ -150,7 +135,12 @@ public actor SensorsService: Service {
 
   private func publish(_ double: Double?, to topic: String) async throws {
     guard let double else { return }
-    try await client.publish(double, to: topic)
+    try await topicPublisher.publish(
+      to: topic,
+      payload: ByteBufferAllocator().buffer(string: "\(double)"),
+      qos: .exactlyOnce,
+      retain: true
+    )
     logger?.trace("Published update to topic: \(topic)")
   }
 
@@ -158,6 +148,7 @@ public actor SensorsService: Service {
     for sensor in sensors.filter(\.needsProcessed) {
       try await publish(sensor.dewPoint?.value, to: sensor.topics.dewPoint)
       try await publish(sensor.enthalpy?.value, to: sensor.topics.enthalpy)
+      try sensors.hasProcessed(sensor)
     }
   }
 }
