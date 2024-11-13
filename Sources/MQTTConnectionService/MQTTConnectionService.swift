@@ -15,6 +15,7 @@ public struct MQTTConnectionManager: Sendable {
   public var shutdown: () -> Void
 
   public enum Event: Sendable {
+    case notStarted
     case connected
     case disconnected
     case shuttingDown
@@ -65,9 +66,9 @@ public actor MQTTConnectionService: Service {
         // continue to run and handle graceful shutdowns.
         logger?.trace("Received connection event: \(event)")
       }
+      manager.shutdown()
     } onGracefulShutdown: {
       self.logger?.trace("Received graceful shutdown.")
-      Task { await self.manager.shutdown() }
     }
   }
 }

@@ -36,7 +36,6 @@ struct Application {
 
     try await withDependencies {
       $0.psychrometricClient = .liveValue
-      // $0.sensorsClient = .live(client: mqtt)
       $0.topicListener = .live(client: mqtt)
       $0.topicPublisher = .live(client: mqtt)
       $0.mqttConnectionManager = .live(client: mqtt, logger: logger)
@@ -59,6 +58,8 @@ struct Application {
 
       try await serviceGroup.run()
     }
+
+    try await mqtt.shutdown()
   }
 }
 
