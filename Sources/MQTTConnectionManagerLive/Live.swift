@@ -25,6 +25,58 @@ public extension MQTTConnectionManager {
 
 // MARK: - Helpers
 
+final class MQTTConnectionStream: Sendable {
+  private let client: MQTTClient
+  private let continuation: AsyncStream<MQTTConnectionManager.Event>.Continuation
+  private var logger: Logger { client.logger }
+  private let name: String
+  private let stream: AsyncStream<MQTTConnectionManager.Event>
+
+  init(client: MQTTClient) {
+    let (stream, continuation) = AsyncStream<MQTTConnectionManager.Event>.makeStream()
+    self.client = client
+    self.continuation = continuation
+    self.name = UUID().uuidString
+    self.stream = stream
+    continuation.yield(client.isActive() ? .connected : .disconnected)
+  }
+
+  deinit { stop() }
+
+  func start() -> AsyncStream<MQTTConnectionManager.Event> {
+    client.addCloseListener(named: name) { _ in
+      self.logger.trace("Client has disconnected.")
+      self.continuation.yield(.disconnected)
+    }
+    client.addShutdownListener(named: name) { _ in
+      self.logger.trace("Client is shutting down.")
+      self.continuation.yield(.shuttingDown)
+      self.stop()
+    }
+    let task = Task {
+      while !Task.isCancelled {
+        try? await Task.sleep(for: .milliseconds(100))
+        continuation.yield(
+          self.client.isActive() ? .connected : .disconnected
+        )
+      }
+    }
+    continuation.onTermination = { _ in
+      task.cancel()
+    }
+    return stream
+  }
+
+  func stop() {
+    client.removeCloseListener(named: name)
+    client.removeShutdownListener(named: name)
+    continuation.finish()
+  }
+
+}
+
+// TODO: Remove stream stuff from this.
+
 private actor ConnectionManager {
   private let client: MQTTClient
   private let continuation: AsyncStream<MQTTConnectionManager.Event>.Continuation

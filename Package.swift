@@ -71,6 +71,7 @@ let package = Package(
       name: "MQTTConnectionServiceTests",
       dependencies: [
         "MQTTConnectionService",
+        "MQTTConnectionManagerLive",
         .product(name: "ServiceLifecycleTestKit", package: "swift-service-lifecycle")
       ]
     ),

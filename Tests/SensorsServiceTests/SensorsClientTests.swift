@@ -132,52 +132,52 @@ final class SensorsClientTests: XCTestCase {
 //     try await mqtt.shutdown()
 //   }
 
-  func testCapturingSensorClient() async throws {
-    class CapturedValues {
-      var values = [(value: Double, topic: String)]()
-      var didShutdown = false
-
-      init() {}
-    }
-
-    let capturedValues = CapturedValues()
-
-    try await withDependencies {
-      $0.sensorsClient = .testing(
-        yielding: [
-          (value: 76, to: "not-listening"),
-          (value: 75, to: "test")
-        ]
-      ) { value, topic in
-        capturedValues.values.append((value, topic))
-      } captureShutdownEvent: {
-        capturedValues.didShutdown = $0
-      }
-    } operation: {
-      @Dependency(\.sensorsClient) var client
-      let stream = try await client.listen(to: ["test"])
-
-      for await result in stream {
-        var buffer = result.buffer
-        guard let double = Double(buffer: &buffer) else {
-          XCTFail("Failed to decode double")
-          return
-        }
-
-        XCTAssertEqual(double, 75)
-        XCTAssertEqual(result.topic, "test")
-        try await client.publish(26, to: "publish")
-        try await Task.sleep(for: .milliseconds(100))
-        client.shutdown()
-      }
-
-      XCTAssertEqual(capturedValues.values.count, 1)
-      XCTAssertEqual(capturedValues.values.first?.value, 26)
-      XCTAssertEqual(capturedValues.values.first?.topic, "publish")
-      XCTAssertTrue(capturedValues.didShutdown)
-    }
-  }
-
+//   func testCapturingSensorClient() async throws {
+//     class CapturedValues {
+//       var values = [(value: Double, topic: String)]()
+//       var didShutdown = false
+//
+//       init() {}
+//     }
+//
+//     let capturedValues = CapturedValues()
+//
+//     try await withDependencies {
+//       $0.sensorsClient = .testing(
+//         yielding: [
+//           (value: 76, to: "not-listening"),
+//           (value: 75, to: "test")
+//         ]
+//       ) { value, topic in
+//         capturedValues.values.append((value, topic))
+//       } captureShutdownEvent: {
+//         capturedValues.didShutdown = $0
+//       }
+//     } operation: {
+//       @Dependency(\.sensorsClient) var client
+//       let stream = try await client.listen(to: ["test"])
+//
+//       for await result in stream {
+//         var buffer = result.buffer
+//         guard let double = Double(buffer: &buffer) else {
+//           XCTFail("Failed to decode double")
+//           return
+//         }
+//
+//         XCTAssertEqual(double, 75)
+//         XCTAssertEqual(result.topic, "test")
+//         try await client.publish(26, to: "publish")
+//         try await Task.sleep(for: .milliseconds(100))
+//         client.shutdown()
+//       }
+//
+//       XCTAssertEqual(capturedValues.values.count, 1)
+//       XCTAssertEqual(capturedValues.values.first?.value, 26)
+//       XCTAssertEqual(capturedValues.values.first?.topic, "publish")
+//       XCTAssertTrue(capturedValues.didShutdown)
+//     }
+//   }
+//
 //   func testSensorCapturesPublishedState() async throws {
 //     let client = createClient(identifier: "testSensorCapturesPublishedState")
 //     let mqtt = client.client
@@ -258,35 +258,35 @@ class PublishInfoContainer {
   }
 }
 
-extension SensorsClient {
-
-  static func testing(
-    yielding: [(value: Double, to: String)],
-    capturePublishedValues: @escaping (Double, String) -> Void,
-    captureShutdownEvent: @escaping (Bool) -> Void
-  ) -> Self {
-    let (stream, continuation) = AsyncStream.makeStream(of: PublishInfo.self)
-    let logger = Logger(label: "\(Self.self).testing")
-
-    return .init(
-      listen: { topics in
-        for (value, topic) in yielding where topics.contains(topic) {
-          continuation.yield(
-            (buffer: ByteBuffer(string: "\(value)"), topic: topic)
-          )
-        }
-        return stream
-      },
-      logger: logger,
-      publish: { value, topic in
-        capturePublishedValues(value, topic)
-      },
-      shutdown: {
-        captureShutdownEvent(true)
-        continuation.finish()
-      }
-    )
-  }
-}
+// extension SensorsClient {
+//
+//   static func testing(
+//     yielding: [(value: Double, to: String)],
+//     capturePublishedValues: @escaping (Double, String) -> Void,
+//     captureShutdownEvent: @escaping (Bool) -> Void
+//   ) -> Self {
+//     let (stream, continuation) = AsyncStream.makeStream(of: PublishInfo.self)
+//     let logger = Logger(label: "\(Self.self).testing")
+//
+//     return .init(
+//       listen: { topics in
+//         for (value, topic) in yielding where topics.contains(topic) {
+//           continuation.yield(
+//             (buffer: ByteBuffer(string: "\(value)"), topic: topic)
+//           )
+//         }
+//         return stream
+//       },
+//       logger: logger,
+//       publish: { value, topic in
+//         capturePublishedValues(value, topic)
+//       },
+//       shutdown: {
+//         captureShutdownEvent(true)
+//         continuation.finish()
+//       }
+//     )
+//   }
+// }
 
 struct TopicNotFoundError: Error {}

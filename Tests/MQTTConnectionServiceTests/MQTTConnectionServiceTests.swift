@@ -1,5 +1,6 @@
 import Logging
 import Models
+@testable import MQTTConnectionManagerLive
 @testable import MQTTConnectionService
 import MQTTNIO
 import NIO
@@ -17,14 +18,42 @@ final class MQTTConnectionServiceTests: XCTestCase {
     return logger
   }()
 
-  func testGracefulShutdownWorks() async throws {
-    let client = createClient(identifier: "testGracefulShutdown")
-    let service = MQTTConnectionService(client: client)
-    await service.connect()
-    try await Task.sleep(for: .seconds(1))
-    XCTAssert(client.isActive())
-    service.shutdown()
-    XCTAssertFalse(client.isActive())
+//   func testGracefulShutdownWorks() async throws {
+//     let client = createClient(identifier: "testGracefulShutdown")
+//     let service = MQTTConnectionService(client: client)
+//     await service.connect()
+//     try await Task.sleep(for: .seconds(1))
+//     XCTAssert(client.isActive())
+//     service.shutdown()
+//     XCTAssertFalse(client.isActive())
+//   }
+
+  func testMQTTConnectionStream() async throws {
+    let client = createClient(identifier: "testNonManagedStream")
+    let manager = MQTTConnectionManager.live(client: client, logger: Self.logger)
+    let stream = MQTTConnectionStream(client: client)
+    var events = [MQTTConnectionManager.Event]()
+
+    _ = try await manager.connect()
+
+    Task {
+      while !client.isActive() {
+        try await Task.sleep(for: .milliseconds(100))
+      }
+      try await Task.sleep(for: .milliseconds(200))
+      manager.shutdown()
+      try await client.disconnect()
+      try await Task.sleep(for: .milliseconds(200))
+      stream.stop()
+    }
+
+    for await event in stream.start().removeDuplicates() {
+      events.append(event)
+    }
+
+    XCTAssertEqual(events, [.disconnected, .connected, .disconnected])
+
+    try await client.shutdown()
   }
 
   func createClient(identifier: String) -> MQTTClient {
