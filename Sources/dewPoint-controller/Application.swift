@@ -2,7 +2,8 @@ import Dependencies
 import Foundation
 import Logging
 import Models
-import MQTTConnectionManagerLive
+import MQTTConnectionManager
+import MQTTConnectionService
 import MQTTNIO
 import NIO
 import PsychrometricClientLive
@@ -15,7 +16,7 @@ struct Application {
 
   /// The main entry point of the application.
   static func main() async throws {
-    let eventloopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+    let eventloopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     var logger = Logger(label: "dewpoint-controller")
     logger.logLevel = .trace
 
@@ -34,32 +35,36 @@ struct Application {
       logger: logger
     )
 
-    try await withDependencies {
-      $0.psychrometricClient = .liveValue
-      $0.topicListener = .live(client: mqtt)
-      $0.topicPublisher = .live(client: mqtt)
-      $0.mqttConnectionManager = .live(client: mqtt, logger: logger)
-    } operation: {
-      let mqttConnection = MQTTConnectionService(logger: logger)
-      let sensors = SensorsService(sensors: .live, logger: logger)
+    do {
+      try await withDependencies {
+        $0.psychrometricClient = .liveValue
+        $0.topicListener = .live(client: mqtt)
+        $0.topicPublisher = .live(client: mqtt)
+        $0.mqttConnectionManager = .live(client: mqtt, logger: logger)
+      } operation: {
+        let mqttConnection = MQTTConnectionService(logger: logger)
+        let sensors = SensorsService(sensors: .live, logger: logger)
 
-      var serviceGroupConfiguration = ServiceGroupConfiguration(
-        services: [
-          mqttConnection,
-          sensors
-        ],
-        gracefulShutdownSignals: [.sigterm, .sigint],
-        logger: logger
-      )
-      serviceGroupConfiguration.maximumCancellationDuration = .seconds(5)
-      serviceGroupConfiguration.maximumGracefulShutdownDuration = .seconds(10)
+        var serviceGroupConfiguration = ServiceGroupConfiguration(
+          services: [
+            mqttConnection,
+            sensors
+          ],
+          gracefulShutdownSignals: [.sigterm, .sigint],
+          logger: logger
+        )
+        serviceGroupConfiguration.maximumCancellationDuration = .seconds(5)
+        serviceGroupConfiguration.maximumGracefulShutdownDuration = .seconds(10)
 
-      let serviceGroup = ServiceGroup(configuration: serviceGroupConfiguration)
+        let serviceGroup = ServiceGroup(configuration: serviceGroupConfiguration)
 
-      try await serviceGroup.run()
+        try await serviceGroup.run()
+      }
+
+      try await mqtt.shutdown()
+    } catch {
+      try await eventloopGroup.shutdownGracefully()
     }
-
-    try await mqtt.shutdown()
   }
 }
 

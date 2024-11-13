@@ -15,12 +15,13 @@ let package = Package(
   products: [
     .executable(name: "dewpoint-controller", targets: ["dewpoint-controller"]),
     .library(name: "Models", targets: ["Models"]),
-    .library(name: "MQTTConnectionManagerLive", targets: ["MQTTConnectionManagerLive"]),
+    .library(name: "MQTTConnectionManager", targets: ["MQTTConnectionManager"]),
     .library(name: "MQTTConnectionService", targets: ["MQTTConnectionService"]),
     .library(name: "SensorsService", targets: ["SensorsService"]),
     .library(name: "TopicDependencies", targets: ["TopicDependencies"])
   ],
   dependencies: [
+    .package(url: "https://github.com/apple/swift-async-algorithms", from: "1.0.0"),
     .package(url: "https://github.com/apple/swift-nio", from: "2.0.0"),
     .package(url: "https://github.com/apple/swift-log", from: "1.6.0"),
     .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.4.1"),
@@ -33,7 +34,8 @@ let package = Package(
       name: "dewpoint-controller",
       dependencies: [
         "Models",
-        "MQTTConnectionManagerLive",
+        "MQTTConnectionManager",
+        "MQTTConnectionService",
         "SensorsService",
         "TopicDependencies",
         .product(name: "MQTTNIO", package: "mqtt-nio"),
@@ -50,9 +52,11 @@ let package = Package(
       swiftSettings: swiftSettings
     ),
     .target(
-      name: "MQTTConnectionManagerLive",
+      name: "MQTTConnectionManager",
       dependencies: [
-        "MQTTConnectionService",
+        .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
+        .product(name: "Dependencies", package: "swift-dependencies"),
+        .product(name: "DependenciesMacros", package: "swift-dependencies"),
         .product(name: "MQTTNIO", package: "mqtt-nio")
       ],
       swiftSettings: swiftSettings
@@ -61,8 +65,7 @@ let package = Package(
       name: "MQTTConnectionService",
       dependencies: [
         "Models",
-        .product(name: "Dependencies", package: "swift-dependencies"),
-        .product(name: "DependenciesMacros", package: "swift-dependencies"),
+        "MQTTConnectionManager",
         .product(name: "ServiceLifecycle", package: "swift-service-lifecycle")
       ],
       swiftSettings: swiftSettings
@@ -71,7 +74,7 @@ let package = Package(
       name: "MQTTConnectionServiceTests",
       dependencies: [
         "MQTTConnectionService",
-        "MQTTConnectionManagerLive",
+        "MQTTConnectionManager",
         .product(name: "ServiceLifecycleTestKit", package: "swift-service-lifecycle")
       ]
     ),

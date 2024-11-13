@@ -50,7 +50,10 @@ public struct TopicPublisher: Sendable {
   public static func live(client: MQTTClient) -> Self {
     .init(
       publish: { request in
-        assert(client.isActive(), "Client not connected.")
+        guard client.isActive() else {
+          client.logger.trace("Client is not connected, unable to publish to \(request.topicName)")
+          return
+        }
         client.logger.trace("Begin publishing to topic: \(request.topicName)")
         defer { client.logger.trace("Done publishing to topic: \(request.topicName)") }
         try await client.publish(

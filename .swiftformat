@@ -8,3 +8,4 @@
 --wrapconditions after-first
 --typeblanklines preserve
 --commas inline
+--stripunusedargs closure-only

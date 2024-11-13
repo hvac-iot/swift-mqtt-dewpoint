@@ -1,7 +1,7 @@
 import Logging
 import Models
-@testable import MQTTConnectionManagerLive
-@testable import MQTTConnectionService
+@testable import MQTTConnectionManager
+import MQTTConnectionService
 import MQTTNIO
 import NIO
 import ServiceLifecycle
@@ -30,7 +30,11 @@ final class MQTTConnectionServiceTests: XCTestCase {
 
   func testMQTTConnectionStream() async throws {
     let client = createClient(identifier: "testNonManagedStream")
-    let manager = MQTTConnectionManager.live(client: client, logger: Self.logger)
+    let manager = MQTTConnectionManager.live(
+      client: client,
+      logger: Self.logger,
+      alwaysReconnect: false
+    )
     let stream = MQTTConnectionStream(client: client)
     var events = [MQTTConnectionManager.Event]()
 
@@ -44,16 +48,16 @@ final class MQTTConnectionServiceTests: XCTestCase {
       manager.shutdown()
       try await client.disconnect()
       try await Task.sleep(for: .milliseconds(200))
+      try await client.shutdown()
+      try await Task.sleep(for: .milliseconds(200))
       stream.stop()
     }
 
-    for await event in stream.start().removeDuplicates() {
+    for await event in stream.removeDuplicates() {
       events.append(event)
     }
 
-    XCTAssertEqual(events, [.disconnected, .connected, .disconnected])
-
-    try await client.shutdown()
+    XCTAssertEqual(events, [.disconnected, .connected, .disconnected, .shuttingDown])
   }
 
   func createClient(identifier: String) -> MQTTClient {
