@@ -10,7 +10,7 @@ public extension MQTTConnectionManager {
     logger: Logger? = nil
   ) -> Self {
     let manager = ConnectionManager(client: client, logger: logger)
-    return .init { _ in
+    return .init {
       try await manager.connect(cleanSession: cleanSession)
 
       return manager.stream
@@ -76,6 +76,8 @@ private actor ConnectionManager {
 
   nonisolated func shutdown() {
     client.logger.trace("Shutting down connection.")
+    client.removeCloseListener(named: name)
+    client.removeShutdownListener(named: name)
     continuation.yield(.shuttingDown)
     continuation.finish()
   }

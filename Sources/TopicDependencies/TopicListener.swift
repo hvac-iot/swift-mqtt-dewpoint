@@ -153,10 +153,6 @@ private actor MQTTTopicListener {
       }
     }
 
-    client.addShutdownListener(named: name) { _ in
-      self.shutdown()
-    }
-
     return stream
   }
 
@@ -167,6 +163,8 @@ private actor MQTTTopicListener {
   nonisolated func shutdown() {
     client.logger.trace("Closing topic listener...")
     continuation.finish()
+    client.removePublishListener(named: name)
+    client.removeShutdownListener(named: name)
     Task { await self.setIsShuttingDown() }
   }
 }

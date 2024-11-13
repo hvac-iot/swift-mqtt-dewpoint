@@ -11,11 +11,10 @@ import ServiceLifecycle
 @DependencyClient
 public struct MQTTConnectionManager: Sendable {
 
-  public var connect: @Sendable (_ cleanSession: Bool) async throws -> AsyncStream<Event>
+  public var connect: @Sendable () async throws -> AsyncStream<Event>
   public var shutdown: () -> Void
 
   public enum Event: Sendable {
-    case notStarted
     case connected
     case disconnected
     case shuttingDown
@@ -43,14 +42,11 @@ public extension DependencyValues {
 public actor MQTTConnectionService: Service {
   @Dependency(\.mqttConnectionManager) var manager
 
-  private let cleanSession: Bool
   private nonisolated let logger: Logger?
 
   public init(
-    cleanSession: Bool = false,
     logger: Logger? = nil
   ) {
-    self.cleanSession = cleanSession
     self.logger = logger
   }
 
@@ -59,7 +55,7 @@ public actor MQTTConnectionService: Service {
   /// connection.
   public func run() async throws {
     try await withGracefulShutdownHandler {
-      let stream = try await manager.connect(cleanSession)
+      let stream = try await manager.connect()
       for await event in stream.cancelOnGracefulShutdown() {
         // We don't really need to do anything with the events, so just logging
         // for now.  But we need to iterate on an async stream for the service to
