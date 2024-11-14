@@ -5,6 +5,7 @@ import MQTTNIO
 import NIO
 import PsychrometricClientLive
 @testable import SensorsService
+import TopicDependencies
 import XCTest
 
 final class SensorsClientTests: XCTestCase {
@@ -25,42 +26,28 @@ final class SensorsClientTests: XCTestCase {
     }
   }
 
-//   func createClient(identifier: String) -> SensorsClient {
-//     let envVars = EnvVars(
-//       appEnv: .testing,
-//       host: Self.hostname,
-//       port: "1883",
-//       identifier: identifier,
-//       userName: nil,
-//       password: nil
-//     )
-//     return .init(envVars: envVars, logger: Self.logger)
-//   }
-  func createClient(identifier: String) -> MQTTClient {
-    let envVars = EnvVars(
-      appEnv: .testing,
-      host: Self.hostname,
-      port: "1883",
-      identifier: identifier,
-      userName: nil,
-      password: nil
+  func testWhatHappensIfClientDisconnectsWhileListening() async throws {
+    let client = createClient(identifier: "testWhatHappensIfClientDisconnectsWhileListening")
+    let listener = TopicListener.live(client: client)
+    try await client.connect()
+
+    let stream = try await listener.listen("/some/topic")
+
+//     try await Task.sleep(for: .seconds(1))
+//     try await client.disconnect()
+//
+//     try await client.connect()
+//     try await Task.sleep(for: .seconds(1))
+    try await client.publish(
+      to: "/some/topic",
+      payload: ByteBufferAllocator().buffer(string: "Foo"),
+      qos: .atLeastOnce,
+      retain: true
     )
-    let config = MQTTClient.Configuration(
-      version: .v3_1_1,
-      userName: envVars.userName,
-      password: envVars.password,
-      useSSL: false,
-      useWebSockets: false,
-      tlsConfiguration: nil,
-      webSocketURLPath: nil
-    )
-    return .init(
-      host: Self.hostname,
-      identifier: identifier,
-      eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup(numberOfThreads: 1)),
-      logger: Self.logger,
-      configuration: config
-    )
+    try await Task.sleep(for: .seconds(1))
+
+    listener.shutdown()
+    try await client.shutdown()
   }
 
 //   func testConnectAndShutdown() async throws {
@@ -234,9 +221,46 @@ final class SensorsClientTests: XCTestCase {
 //
 //     await client.shutdown()
 //   }
+
+  func createClient(identifier: String) -> MQTTClient {
+    let envVars = EnvVars(
+      appEnv: .testing,
+      host: Self.hostname,
+      port: "1883",
+      identifier: identifier,
+      userName: nil,
+      password: nil
+    )
+    let config = MQTTClient.Configuration(
+      version: .v3_1_1,
+      userName: envVars.userName,
+      password: envVars.password,
+      useSSL: false,
+      useWebSockets: false,
+      tlsConfiguration: nil,
+      webSocketURLPath: nil
+    )
+    return .init(
+      host: Self.hostname,
+      identifier: identifier,
+      eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup(numberOfThreads: 1)),
+      logger: Self.logger,
+      configuration: config
+    )
+  }
 }
 
 // MARK: Helpers for tests.
+
+extension AsyncStream {
+  func first() async -> Element {
+    var first: Element
+    for await value in self {
+      first = value
+    }
+    return first
+  }
+}
 
 class PublishInfoContainer {
   private(set) var info: [MQTTPublishInfo]

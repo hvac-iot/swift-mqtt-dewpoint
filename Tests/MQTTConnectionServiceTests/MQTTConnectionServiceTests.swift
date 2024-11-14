@@ -28,6 +28,14 @@ final class MQTTConnectionServiceTests: XCTestCase {
 //     XCTAssertFalse(client.isActive())
 //   }
 
+  func testWhatHappensIfConnectIsCalledMultipleTimes() async throws {
+    let client = createClient(identifier: "testWhatHappensIfConnectIsCalledMultipleTimes")
+    let manager = MQTTConnectionManager.live(client: client)
+    try await manager.connect()
+    try await manager.connect()
+  }
+
+  // TODO: Move to integration tests.
   func testMQTTConnectionStream() async throws {
     let client = createClient(identifier: "testNonManagedStream")
     let manager = MQTTConnectionManager.live(
@@ -35,7 +43,7 @@ final class MQTTConnectionServiceTests: XCTestCase {
       logger: Self.logger,
       alwaysReconnect: false
     )
-    let stream = MQTTConnectionStream(client: client)
+    let stream = MQTTConnectionStream(client: client, logger: Self.logger)
     var events = [MQTTConnectionManager.Event]()
 
     _ = try await manager.connect()

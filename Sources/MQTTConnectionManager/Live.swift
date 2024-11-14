@@ -57,7 +57,7 @@ public struct MQTTConnectionManager: Sendable {
     } shutdown: {
       manager.shutdown()
     } stream: {
-      MQTTConnectionStream(client: client)
+      MQTTConnectionStream(client: client, logger: logger)
         .start()
         .removeDuplicates()
         .eraseToStream()
@@ -80,17 +80,17 @@ final class MQTTConnectionStream: AsyncSequence, Sendable {
 
   private let client: MQTTClient
   private let continuation: AsyncStream<Element>.Continuation
-  private var logger: Logger { client.logger }
+  private let logger: Logger?
   private let name: String
   private let stream: AsyncStream<Element>
 
-  init(client: MQTTClient) {
+  init(client: MQTTClient, logger: Logger?) {
     let (stream, continuation) = AsyncStream<Element>.makeStream()
     self.client = client
     self.continuation = continuation
+    self.logger = logger
     self.name = UUID().uuidString
     self.stream = stream
-    continuation.yield(client.isActive() ? .connected : .disconnected)
   }
 
   deinit { stop() }
@@ -98,26 +98,24 @@ final class MQTTConnectionStream: AsyncSequence, Sendable {
   func start(
     isolation: isolated (any Actor)? = #isolation
   ) -> AsyncStream<Element> {
+    // Check if the client is active and yield the result.
+    continuation.yield(client.isActive() ? .connected : .disconnected)
+
+    // Register listener on the client for when the connection
+    // closes.
     client.addCloseListener(named: name) { _ in
-      self.logger.trace("Client has disconnected.")
+      self.logger?.trace("Client has disconnected.")
       self.continuation.yield(.disconnected)
     }
+
+    // Register listener on the client for when the client
+    // is shutdown.
     client.addShutdownListener(named: name) { _ in
-      self.logger.trace("Client is shutting down.")
+      self.logger?.trace("Client is shutting down.")
       self.continuation.yield(.shuttingDown)
       self.stop()
     }
-    let task = Task {
-      while !Task.isCancelled {
-        try? await Task.sleep(for: .milliseconds(100))
-        continuation.yield(
-          self.client.isActive() ? .connected : .disconnected
-        )
-      }
-    }
-    continuation.onTermination = { _ in
-      task.cancel()
-    }
+
     return stream
   }
 
@@ -133,11 +131,12 @@ final class MQTTConnectionStream: AsyncSequence, Sendable {
 
 }
 
-final class ConnectionManager: Sendable {
+actor ConnectionManager {
   private let client: MQTTClient
   private let logger: Logger?
   private let name: String
   private let shouldReconnect: Bool
+  private var hasConnected: Bool = false
 
   init(
     client: MQTTClient,
@@ -156,12 +155,18 @@ final class ConnectionManager: Sendable {
     self.shutdown(withLogging: false)
   }
 
+  private func setHasConnected() {
+    hasConnected = true
+  }
+
   func connect(
     isolation: isolated (any Actor)? = #isolation,
     cleanSession: Bool
   ) async throws {
+    guard !(await hasConnected) else { return }
     do {
       try await client.connect(cleanSession: cleanSession)
+      await setHasConnected()
 
       client.addCloseListener(named: name) { [weak self] _ in
         guard let `self` else { return }
@@ -174,8 +179,8 @@ final class ConnectionManager: Sendable {
         }
       }
 
-      client.addShutdownListener(named: name) { [weak self] _ in
-        self?.shutdown()
+      client.addShutdownListener(named: name) { _ in
+        self.shutdown()
       }
 
     } catch {
@@ -184,7 +189,7 @@ final class ConnectionManager: Sendable {
     }
   }
 
-  func shutdown(withLogging: Bool = true) {
+  nonisolated func shutdown(withLogging: Bool = true) {
     if withLogging {
       logger?.trace("Shutting down connection.")
     }

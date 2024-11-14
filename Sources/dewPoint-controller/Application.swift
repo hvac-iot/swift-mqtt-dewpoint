@@ -62,6 +62,7 @@ struct Application {
       }
 
       try await mqtt.shutdown()
+      try await eventloopGroup.shutdownGracefully()
     } catch {
       try await eventloopGroup.shutdownGracefully()
     }
